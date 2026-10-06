@@ -53,12 +53,16 @@ cp -r easy-college/skills/* ~/.agents/skills/     # 或者做软链接，原地�
 <details>
 <summary><strong>Claude Code —— 作为插件</strong></summary>
 
-仓库自带插件与市场清单，Claude Code 可以把整套作为受管捆绑安装并自动更新：
+仓库自带插件与市场清单，Claude Code 可以把整套作为受管捆绑安装并自动更新。在会话里：
 
 ```
 /plugin marketplace add yejianqin61-cell/easy-college
-/plugin install easy-college
+/plugin install easy-college@easy-college
 ```
+
+分两步是因为 `/plugin install` 需要把市场名（`easy-college`，取自
+`.claude-plugin/marketplace.json`）作为后缀写上。非 Anthropic 官方市场的自动更新默认关闭，
+想让改动自动送达，就在 `/plugin` 的 **Marketplaces** 标签页里打开。
 
 </details>
 

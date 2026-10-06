@@ -57,13 +57,18 @@ own version. Nothing here updates behind your back.
 <details>
 <summary><strong>Claude Code — as a plugin</strong></summary>
 
-The repo ships a plugin and marketplace manifest, so Claude Code can install and update the
-whole set as a managed bundle:
+The repo ships a plugin and marketplace manifest, so Claude Code can install and update the whole
+set as a managed bundle. In a session:
 
 ```
 /plugin marketplace add yejianqin61-cell/easy-college
-/plugin install easy-college
+/plugin install easy-college@easy-college
 ```
+
+The two steps are separate because `/plugin install` needs the marketplace's name (`easy-college`,
+from `.claude-plugin/marketplace.json`) as a suffix. Auto-update is off by default for marketplaces
+that are not Anthropic's, so turn it on from the **Marketplaces** tab in `/plugin` if you want
+changes to arrive on their own.
 
 </details>
 

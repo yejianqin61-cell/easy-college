@@ -20,6 +20,13 @@ bin/cli.js                        the installer
 scripts/test-repo.mjs             repo-level tests (`npm test`)
 ```
 
+**The repo root is also the plugin root.** `.claude-plugin/plugin.json` and `marketplace.json`
+declare the two skills by path, so installing the plugin installs exactly the same folders the
+installer copies. Verify a manifest change with `claude plugin validate .`, which reports
+`Validation passed with warnings` today: the warning is that `CLAUDE.md` at the plugin root is not
+loaded as project context. That is expected — it is the contributor pointer, not plugin content —
+so do not silence it by deleting the file.
+
 ## Rules
 
 **A skill folder must stand alone.** Nothing inside `skills/<a>/` may reference a file inside
