@@ -1,0 +1,192 @@
+/* easy-review revision notes → PDF stylesheet (A4, CJK-safe, compact tables).
+   Same typography as the first-pass notes, tuned for one thing they do not have: a self-test
+   column at the end that must stay visually separate from the knowledge it tests. */
+
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+}
+
+html {
+  font-size: 10.5pt;
+}
+
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "SimSun", "Segoe UI", sans-serif;
+  line-height: 1.65;
+  color: #1a1a1a;
+  max-width: 100%;
+  margin: 0;
+  text-align: justify;
+}
+
+h1 {
+  font-size: 20pt;
+  border-bottom: 2.5px solid #1f3a5f;
+  padding-bottom: 6px;
+  margin: 0 0 18px;
+  color: #1f3a5f;
+}
+
+/* Pandoc injects its own <h1 class="title"> from --metadata title; the notes' own H1 is the real
+   title, so hide the injected one. The <title> tag still names the PDF. */
+h1.title {
+  display: none;
+}
+
+h2 {
+  font-size: 15pt;
+  color: #1f3a5f;
+  border-left: 5px solid #2f6fb5;
+  padding-left: 9px;
+  margin: 26px 0 10px;
+  page-break-after: avoid;
+}
+
+h3 {
+  font-size: 12.5pt;
+  color: #24466f;
+  margin: 18px 0 6px;
+  page-break-after: avoid;
+}
+
+h4 {
+  font-size: 11pt;
+  color: #2f4f72;
+  margin: 12px 0 4px;
+  page-break-after: avoid;
+}
+
+p, li {
+  margin: 5px 0;
+}
+
+/* A revision note is scanned, not read: the tightened lists are what make it scannable. */
+ul, ol {
+  margin: 6px 0 8px;
+  padding-left: 1.5em;
+}
+
+li > ul, li > ol {
+  margin: 3px 0;
+}
+
+strong {
+  color: #b03030;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0 14px;
+  font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+
+th, td {
+  border: 1px solid #9aa7b4;
+  padding: 4px 7px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #eaf0f7;
+  color: #1f3a5f;
+  font-weight: 600;
+}
+
+tbody tr:nth-child(even) td {
+  background: #fafbfc;
+}
+
+blockquote {
+  margin: 9px 0;
+  padding: 7px 12px;
+  background: #f4f7fa;
+  border-left: 4px solid #2f6fb5;
+  page-break-inside: avoid;
+}
+
+blockquote blockquote {
+  background: #eef4ec;
+  border-left-color: #4a8a4a;
+  margin: 6px 0 0;
+}
+
+code, pre {
+  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+}
+
+code {
+  background: #f0f2f4;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 9.5pt;
+}
+
+pre {
+  background: #f6f8fa;
+  border: 1px solid #dde3e9;
+  border-radius: 4px;
+  padding: 9px 12px;
+  overflow-x: auto;
+  font-size: 9pt;
+  line-height: 1.45;
+  page-break-inside: avoid;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #dde3e9;
+  margin: 20px 0;
+}
+
+/* Figures: the knowledge map at the top of the notes, and any rebuilt diagram. */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+figure {
+  margin: 14px 0 22px;
+  text-align: center;
+  page-break-inside: avoid;
+}
+
+figure img {
+  width: 100%;
+  height: auto;
+}
+
+figcaption {
+  margin-top: 8px;
+  font-size: 9pt;
+  color: #5a6b7c;
+}
+
+/* --- the self-test column ----------------------------------------------------------------
+   It is the last section and it starts on a fresh page, so "answer these without looking" is
+   something the page enforces rather than something the heading asks for. The notes write this
+   heading with an explicit attribute -- `## 自测专栏 {#selftest}` -- because pandoc derives a
+   heading's id from its text, and a text-derived id breaks the moment the language changes. */
+h2#selftest {
+  page-break-before: always;
+  border-left-color: #b03030;
+}
+
+/* A question and its answer are adjacent blockquotes rather than a nested one: at the back of a
+   document the answer must be coverable with one thumb, which a nested quote is not. */
+h2#selftest ~ blockquote {
+  background: #f7f5f2;
+  border-left-color: #b0712c;
+}
+
+math {
+  font-size: 1.05em;
+}
