@@ -78,11 +78,23 @@ npx github:yejianqin61-cell/easy-college
 | 2 | 只剔除背景，每页给理由码 |
 | 3 | 提炼知识点、公式与推导——公式从渲染图重建，绝不从坏掉的文本层照抄 |
 | 4 | 收集课件自带题目；**没给答案的题最值钱** |
-| 5 | 成稿：模块 → 知识点 → 题目紧跟考点，全程带页码 |
-| 6 | 出 PDF（pandoc → 原生 MathML → 无头 Chromium），并检查公式和中文是否真的渲染出来了 |
+| 5 | 成稿：模块 → 知识点 → 题目紧跟考点，全程带页码；**开头用笔记自己的标题生成一张思维导图** |
+| 6 | 出 PDF（pandoc → 原生 MathML → 无头 Chromium），并检查导图、公式和中文是否真的渲染出来了 |
 | 7 | 报台账的两个尾巴——看不清的页面、被剔除的页面——并当场配平页数 |
 
-产物落在 `./notes/<课件名>/`：笔记（`.md` 与 `.pdf`）、台账、页面渲染图。
+产物落在 `./notes/<课件名>/`：笔记（`.md` 与 `.pdf`）、知识结构导图（`.svg`）、台账、页面渲染图。
+
+### 思维导图
+
+每份笔记开头都有一张"整讲全貌"图，**由笔记自己的标题生成**——所以它永远不会和正文脱节：
+
+```bash
+python skills/easy-learning/scripts/mindmap.py notes/my-lecture.notes.md --insert --alt "知识结构图"
+```
+
+向右分支的导图（根 → 模块 → 知识点），输出为独立的 **SVG**。这是唯一能活着走完这条离线流水线的导图
+格式：Mermaid 需要 CDN 或约 300MB 的 `mermaid-cli`，Graphviz / PlantUML 需要额外二进制，而 ASCII 字符画
+遇到中文就会错位（汉字是双宽）。SVG 是矢量的，打印锐利，文字可选可搜。
 
 ---
 
@@ -135,6 +147,7 @@ skills/easy-learning/
 ├── SKILL.md               八步流程
 ├── references/traps.md    陷阱手册：特征、恢复、实证
 ├── scripts/triage.py      逐页分诊 → ledger.json / ledger.md / 页面渲染图
+├── scripts/mindmap.py     笔记标题 → 矢量 SVG 思维导图
 └── assets/notes.css       A4、中文字体安全、紧凑表格
 bin/cli.js                 npx 安装器
 ```

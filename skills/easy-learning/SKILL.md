@@ -46,6 +46,7 @@ Outputs land in `./notes/<input-name>/`:
 | `ledger.md` | per-page verdict + trap + keep/drop + reason | the user, step 7 |
 | `ledger.json` | the same, machine-readable | steps 2–5 |
 | `<name>.notes.md` | the notes: modules, knowledge points, questions | the user |
+| `<name>.notes.mindmap.svg` | the overview map, generated from the notes' headings | embedded in the notes |
 | `<name>.notes.pdf` | the deliverable | the user |
 | `pages/pNN.png` | renders, for the vision pass and for the user to check | step 1, step 7 |
 
@@ -153,6 +154,24 @@ every extracted item appears exactly once in the question set.
 Structure: `##` for a module, `###` for a knowledge point, numbered `N.M`. Knowledge and its questions
 travel together — a question follows the knowledge point it tests.
 
+**Open with a mind map.** The notes start with one picture of the whole lecture, generated from the
+notes' own headings so it can never drift out of sync with them:
+
+```bash
+python scripts/mindmap.py "<out>/<name>.notes.md" --insert --alt "<caption, in the user's language>"
+```
+
+This draws a right-branching map — root → modules → knowledge points — as a standalone SVG and drops
+the image reference just above the first module. Headings are the single source of truth: `#` is the
+root, `##` a branch, `###` a leaf. A `##` section with no `###` children (appendices, errata, a
+table of contents) is left out, because the map shows knowledge structure rather than the document's
+furniture. Re-run it after any heading change; `--insert` refreshes the reference instead of adding a
+second one. Pass `--accent` to override the palette if a deck needs different colours.
+
+An SVG is the only mind-map format that survives this pipeline: Mermaid needs a CDN or a ~300 MB
+`mermaid-cli`, Graphviz and PlantUML need extra binaries, and ASCII art breaks on CJK because Chinese
+glyphs are double-width. SVG is vector, offline, dependency-free, and printed crisp.
+
 **Language.** The notes follow the language the user asked in:
 
 - **Chinese prompt → Chinese notes, bilingual terms, English verbatim.** Write the body in Chinese, and
@@ -200,11 +219,14 @@ carries a page citation.
 ## Step 6 — Render the PDF
 
 Pandoc builds self-contained HTML with native MathML (renders offline in Chromium — no CDN), then
-headless Chromium prints it. **Print through a space-free temp directory with an isolated browser
-profile:**
+headless Chromium prints it. **Build from a space-free temp directory holding the notes and every
+asset they reference, with an isolated browser profile:**
 
 ```powershell
-pandoc "<out>\<name>.notes.md" -s --mathml --embed-resources `
+# the notes reference the mind map by relative path, so it must travel with them
+Copy-Item "<out>\<name>.notes.md","<out>\<name>.notes.mindmap.svg" "<tmp>\"
+
+pandoc "<tmp>\<name>.notes.md" -s --mathml --embed-resources `
   --metadata title="<title, in the user's language>" -c "<skill>\assets\notes.css" `
   -o "<tmp>\notes.html"
 
@@ -214,10 +236,17 @@ pandoc "<out>\<name>.notes.md" -s --mathml --embed-resources `
 # then copy <tmp>\notes.pdf to the output folder
 ```
 
-Two failure modes this avoids, both observed in practice: an **already-running** browser absorbs the
-invocation so `--print-to-pdf` silently writes nothing (hence `--user-data-dir`), and a `file:///` URL
-containing spaces or parentheses does not resolve (hence the temp directory). The step is not done
-until you have confirmed the PDF file exists and is non-empty — a zero exit code proves neither.
+Three failure modes this avoids, all observed in practice: an **already-running** browser absorbs the
+invocation so `--print-to-pdf` silently writes nothing (hence `--user-data-dir`), a `file:///` URL
+containing spaces or parentheses does not resolve (hence the temp directory), and a relative image
+path breaks when the notes are built from somewhere other than their own folder. A print can also lose
+a race with profile creation and write nothing at all — if the PDF is missing, delete the profile
+directory and run the browser once more before suspecting anything else. The step is not done until you
+have confirmed the PDF file exists and is non-empty; a zero exit code proves neither.
+
+`--embed-resources` inlines the SVG as a data URI and the stylesheet into the HTML, so the PDF is
+self-contained and the mind map stays **vector** — its text is selectable and stays sharp at any zoom,
+which a screenshot of a diagram would not be.
 
 `assets/notes.css` sets A4 margins, a CJK font stack (`Microsoft YaHei` → `SimSun` → sans-serif),
 bordered compact tables, `page-break-inside: avoid` on tables and code blocks, and hides pandoc's
@@ -226,9 +255,10 @@ typeset with no network — MathJax/KaTeX would need a CDN. Fallbacks when headl
 in order: LibreOffice `--convert-to pdf`, a `pip install xhtml2pdf` HTML→PDF pass, or hand the user the
 HTML and say so.
 
-Then **open the PDF and look at a table page, a formula page, and a page of the user's language.** Check:
-page count > 0, the user's script is not tofu boxes, formulas are typeset rather than raw `$...$`, tables
-are not clipped at the margin.
+Then **open the PDF and look at the mind map page, a table page, a formula page, and a page of the
+user's language.** Check: page count > 0, the map is present and legible (not blank, not clipped), the
+user's script is not tofu boxes, formulas are typeset rather than raw `$...$`, tables are not clipped at
+the margin.
 
 Done when the PDF exists, is non-empty, and that three-page spot check passed.
 

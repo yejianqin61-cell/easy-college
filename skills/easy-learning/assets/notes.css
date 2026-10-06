@@ -128,6 +128,29 @@ hr {
   margin: 20px 0;
 }
 
+/* Figures: the mind map at the top of the notes, and any rebuilt diagram. */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+figure {
+  margin: 14px 0 22px;
+  text-align: center;
+  page-break-inside: avoid;
+}
+
+figure img {
+  width: 100%;
+  height: auto;
+}
+
+figcaption {
+  margin-top: 8px;
+  font-size: 9pt;
+  color: #5a6b7c;
+}
+
 math {
   font-size: 1.05em;
 }

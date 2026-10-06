@@ -1,6 +1,6 @@
 {
   "name": "easy-college",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Agent skills that turn university courseware into faithful study notes, with a per-page triage ledger and the lecture's own self-test questions.",
   "type": "module",
   "bin": {

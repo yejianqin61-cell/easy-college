@@ -8,6 +8,8 @@ docs/
 example/
 
 node_modules/
+__pycache__/
+*.pyc
 *.log
 
 # OS cruft

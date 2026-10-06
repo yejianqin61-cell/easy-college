@@ -84,11 +84,26 @@ The notes follow the language you asked in.
 | 2 | Drops only the background, with a reason code per page |
 | 3 | Extracts knowledge, formulas and derivations — formulas rebuilt from the render, never copied from a broken text layer |
 | 4 | Collects the lecture's own questions; unanswered ones are the highest-value find |
-| 5 | Writes the Markdown: modules, knowledge points, questions in place, page citations throughout |
-| 6 | Renders the PDF (pandoc → native MathML → headless Chromium) and checks that formulas and CJK actually rendered |
+| 5 | Writes the Markdown: modules, knowledge points, questions in place, page citations throughout — opening with a mind map generated from the notes' own headings |
+| 6 | Renders the PDF (pandoc → native MathML → headless Chromium) and checks that the map, formulas and CJK actually rendered |
 | 7 | Reports the two tails — unreadable pages, dropped pages — and reconciles the counts |
 
-Output lands in `./notes/<lecture-name>/`: the notes (`.md` and `.pdf`), the ledger, and page renders.
+Output lands in `./notes/<lecture-name>/`: the notes (`.md` and `.pdf`), the overview map (`.svg`), the
+ledger, and page renders.
+
+### The mind map
+
+Every set of notes opens with one picture of the whole lecture, generated from the notes' own headings —
+so it cannot drift out of sync with the document:
+
+```bash
+python skills/easy-learning/scripts/mindmap.py notes/my-lecture.notes.md --insert --alt "知识结构图"
+```
+
+A right-branching map (root → modules → knowledge points) emitted as a standalone **SVG**, which is the
+only mind-map format that survives an offline pipeline: Mermaid needs a CDN or a ~300 MB
+`mermaid-cli`, Graphviz and PlantUML need extra binaries, and ASCII art breaks on CJK because Chinese
+glyphs are double-width. Being vector, it stays sharp in print and its text stays selectable.
 
 ---
 
@@ -142,6 +157,7 @@ skills/easy-learning/
 ├── SKILL.md               the 8-step pipeline
 ├── references/traps.md    the trap catalogue: signature, recovery, evidence
 ├── scripts/triage.py      per-page triage → ledger.json / ledger.md / page renders
+├── scripts/mindmap.py     notes headings → a vector SVG mind map
 └── assets/notes.css       A4, CJK-safe, compact tables
 bin/cli.js                 the npx installer
 ```
