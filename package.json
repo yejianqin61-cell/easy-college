@@ -1,0 +1,46 @@
+{
+  "name": "easy-college",
+  "version": "0.1.0",
+  "description": "Agent skills that turn university courseware into faithful study notes, with a per-page triage ledger and the lecture's own self-test questions.",
+  "type": "module",
+  "bin": {
+    "easy-college": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "list": "node bin/cli.js --list"
+  },
+  "keywords": [
+    "agent-skills",
+    "skills",
+    "courseware",
+    "study-notes",
+    "lecture",
+    "pdf",
+    "pptx",
+    "docx",
+    "knowledge-extraction",
+    "quiz",
+    "claude",
+    "llm"
+  ],
+  "author": "Ye Jianqin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yejianqin61-cell/easy-college.git"
+  },
+  "homepage": "https://github.com/yejianqin61-cell/easy-college#readme",
+  "bugs": {
+    "url": "https://github.com/yejianqin61-cell/easy-college/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
