@@ -16,7 +16,7 @@ what they know.
 | Output | `./notes/<lecture>/`: `<name>.review.md`, `<name>.review.mindmap.svg`, `<name>.review.pdf` |
 | Needs | Python 3 + `pymupdf`; `pandoc`; Edge or Chrome for the PDF |
 
-## Four rules make it a revision note
+## Five rules make it a revision note
 
 **1. It opens with the map.** The first thing after the title is one picture of the whole lecture. A
 revision reader arrives knowing the material is familiar and needing to know where they are in it.
@@ -55,7 +55,8 @@ Reach for it whenever the material is already familiar:
 ## 模块 1｜…                                  ← 2. the body
 ### 1.1 …
 ## 复习自检｜原稿疑点与易错点                    ←    the corrections register
-## 自测专栏 {#selftest}                         ← 3. every question
+## 复习目标｜考前自检清单                        ← 3. the mastery checklist
+## 自测专栏 {#selftest}                         ← 4. every question
 ```
 
 The self-test column carries an explicit `{#selftest}` anchor because the stylesheet turns
@@ -108,3 +109,39 @@ the lecture. That stays the extracting agent's job, reconciled out loud at the e
   its own answer key. Revising from a wrong answer key is worse than not revising.
 - **Trust the self-test column as coverage evidence.** If a question the lecture asks is missing from
   it, the extraction missed that page, and the final report will say why.
+
+## The mastery checklist
+
+The body says what the lecture taught. The checklist says what the reader can do — the question that
+actually matters the week before an exam.
+
+It is `## 复习目标｜考前自检清单`, holding one `- [ ]` item per knowledge point, grouped by module in
+the body's order:
+
+- **A capability, not a topic.** `能写出标准误差 $\sigma_{\bar{x}}$ 的公式并说明它与标准差
+  $\sigma_x$ 差在哪里` — not `标准误差`. The heading above already names the topic.
+- **Every item cites its page**, so a failed tick points at the page that fixes it.
+- **The count is the coverage proof.** `check-review.py` compares it against the body's
+  knowledge-point count and warns below 80%, because a checklist that is short lets a reader believe
+  they are finished.
+- **`- [ ]` and nothing else.** A markdown task list, so it is tickable in an editor and prints as a
+  tick column.
+
+Write it after the body, never before: a checklist written first describes the lecture the writer
+expected, and revision is where that guess costs marks.
+
+## Quoting the lecture in both languages
+
+A Chinese note keeps the lecture's own wording in English — it is the wording the exam paper will use
+— and puts the Chinese underneath it:
+
+```markdown
+> **Accuracy** is the closeness of agreement between a measured value and a true or accepted value. (p19)
+>
+> 译：准确度是指测量值与真值（或公认值）的接近程度。(p19)
+```
+
+The blank `>` line is what gives the translation its own paragraph; without it markdown soft-wraps the
+two together and the translation reads as a continuation of the English. `check-review.py` warns about
+any quoted English line in a Chinese note with no `译：` in its blockquote. An English note has none:
+there is nothing to translate.

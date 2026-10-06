@@ -20,8 +20,11 @@ share the same page ledger; they differ in the document they produce.
 
 | Skill | What it does |
 |---|---|
-| [`easy-learning`](skills/easy-learning/) | **Study notes for a first pass.** The lecture's prose carried over whole, with its own questions sitting next to the point they test. |
-| [`easy-review`](skills/easy-review/) | **Revision notes.** A knowledge map on top, knowledge extracted completely as numbered items under modules, and every question pulled out into one self-test column at the end. |
+| [`easy-learning`](skills/easy-learning/) | **Study notes for a first pass.** The lecture's prose carried over whole, with its own questions sitting next to the point they test, closing on a tickable mastery checklist. |
+| [`easy-review`](skills/easy-review/) | **Revision notes.** A knowledge map on top, knowledge extracted completely as numbered items under modules, every question pulled out into one self-test column at the end, and a mastery checklist before it. |
+
+Ask in Chinese and either skill keeps the lecture's own wording in English with the Chinese underneath
+it — the translation to revise from, the original for the exam paper.
 
 Reach for `easy-learning` when the material is new. Reach for `easy-review` when you are revising —
 or the moment you say *"put all the questions at the end"*. Three cases where it is worth saying

@@ -7,7 +7,7 @@ description: "Turn courseware into revision notes: a knowledge map at the top, t
 
 **A revision note is a different document from a first-pass note, not a shorter one.**
 
-Four rules make it that document, and every step below serves them.
+Five rules make it that document, and every step below serves them.
 
 **1. It opens with the map.** The first thing after the title is one picture of the whole
 lecture. A revision reader arrives knowing the material is familiar and needing to know where
@@ -25,7 +25,13 @@ items is the job. Dropping a point is not.
 is extracted and moved to the end. A revision reader who hits a question mid-body either
 answers it (and derails) or skips it (and trains themselves to skip). Neither is revision.
 
-**4. The self-test column is last and is everything.** One section, at the very end, holding
+**4. It states what the reader must be able to do.** After the body comes a **mastery
+checklist**: one tickable line per capability the exam will ask for, grouped by module, each
+carrying its page. A revision reader needs to know not just what the lecture said but what they
+personally cannot yet do, and a list they can tick is the only form that answers that. It is
+derived from the body, so it is also the coverage proof in the reader's hands.
+
+**5. The self-test column is last and is everything.** One section, at the very end, holding
 every question the lecture asks, each with its stem and its answer, each cited to the page it
 came from. It is both the revision aid and the coverage proof: the questions are the lecture's
 own statement of what matters.
@@ -223,7 +229,8 @@ Structure the file in exactly three parts, in this order:
 ## 模块 1｜…                    ← part 2: the body
 ### 1.1 …
 ## 复习自检｜原稿疑点与易错点      corrections + traps, if there are any
-## 自测专栏 {#selftest}          ← part 3: every question
+## 复习目标｜考前自检清单          ← part 3: the mastery checklist
+## 自测专栏 {#selftest}          ← part 4: every question
 ```
 
 **Part 1 — the map.** Generate it from the note's own headings, so it can never drift out of
@@ -252,7 +259,42 @@ Chinese glyphs are double-width. SVG is vector, offline, dependency-free, and pr
 question anywhere inside. The body ends with the corrections register from step 4, if the
 lecture had errors — a table, one row per finding, in the order the pages appear.
 
-**Part 3 — the self-test column.** The heading carries an explicit anchor:
+**Part 3 — the mastery checklist.** `## 复习目标｜考前自检清单`. The heading carries a
+document-furniture word on purpose: the map script and the checker both skip this section, so the
+map keeps showing knowledge structure rather than a second copy of the body.
+
+Open the section with one line telling the reader how to use it, then one `###` per module in the
+body's order, then one tickable item per knowledge point:
+
+```markdown
+## 复习目标｜考前自检清单
+
+> 逐条自问：合上笔记，能否说出或写出这一条？能就打勾。
+
+### 1｜如何正确表达一个数
+
+- [ ] 能说清修约的三条规则，并用「向偶数靠」处理 $3.55$ 与 $3.65$ 这类恰好为 5 的情形（p6）
+- [ ] 能判断一个数有几位有效数字，包括末尾零与前导零两类陷阱（p9–p10）
+- [ ] 能把任意数写成 $m \times 10^{n}$ 且 $1 \le m < 10$（p12）
+```
+
+Four rules make it a checklist rather than a table of contents:
+
+- **A capability, not a topic.** `能写出标准误差 $\sigma_{\bar{x}}$ 的公式并说明它与标准差
+  $\sigma_x$ 差在哪里` — not `标准误差`. The heading already names the topic; the checklist says
+  what the reader must be able to *do* with it.
+- **One item per knowledge point, at least.** The count is the coverage proof: fewer items than
+  the body has knowledge points means something was dropped, and `check-review.py` warns on exactly
+  that comparison. Group the items under their module, in the body's order.
+- **A page citation on every item** — the same invariant as everything else, and what makes a
+  failed tick traceable to the page that fixes it.
+- **`- [ ]` and nothing else.** A markdown task list, so the reader can tick it in an editor and
+  the PDF prints a checkbox column.
+
+Write the items after the body is finished, never before: a checklist written first describes the
+lecture the writer expected, and revision is where that guess costs the reader marks.
+
+**Part 4 — the self-test column.** The heading carries an explicit anchor:
 
 ```markdown
 ## 自测专栏 {#selftest}
@@ -281,17 +323,39 @@ because an unquoted question prints with its answer as ordinary text.
 
 **Language.** The note follows the language the user asked in:
 
-- **Chinese prompt → Chinese body, bilingual terms, source wording verbatim.** Every technical
-  term on first use gets both languages: the Chinese term, then the English in full-width
-  parentheses. The lecture's own definitions and question stems stay in the original English,
-  set apart in blockquotes. Never translate a term away — the exam paper will use one of the two.
-- **English prompt → English throughout**, including headings and question blocks.
+- **Chinese prompt → Chinese body, bilingual terms, every quoted original translated.** Write the
+  body in Chinese, and on first use give every technical term in both languages: the Chinese term,
+  then the English in full-width parentheses. The lecture's own definitions and question stems stay
+  in the original English, set apart in blockquotes — **and each English quote is followed by its
+  Chinese translation**, as its own paragraph of the same blockquote (a blank `>` line, then the
+  translation), introduced by `译：`:
+
+  ```markdown
+  > **Accuracy** is the closeness of agreement between a measured value and a true or accepted
+  > value. (p19)
+  >
+  > 译：准确度是指测量值与真值（或公认值）的接近程度。(p19)
+
+  > **1)** Round 6.5199 to one decimal place
+  > **2)** Round 25.1521 to two decimal places
+  >
+  > 译：1) 将 6.5199 修约到一位小数　2) 将 25.1521 修约到两位小数
+  ```
+
+  The blank `>` matters: without it markdown soft-wraps the two into one paragraph and the
+  translation reads as a continuation of the English. Both halves earn their place: the
+  translation is what the reader revises from, and the original is what the exam paper will use.
+  Never translate a term away, and never replace the English with the Chinese — a quote is the
+  lecture's wording or it is not a quote.
+- **English prompt → English throughout**, including headings and question blocks. No `译：` lines:
+  there is nothing to translate.
 
 Every sample and template in this skill is written in English. Render them in the user's
 language, preserving the structure and the citation suffix.
 
 Done when the file is on disk, and `scripts/check-review.py` reports no violation — map on top,
-no question in the body, self-test column last.
+no question in the body, checklist covering every module, self-test column last — and, in a Chinese
+note, no quoted English original is left untranslated.
 
 ## Step 6 — Check the note, then render it
 
@@ -301,14 +365,17 @@ no question in the body, self-test column last.
 python scripts/check-review.py <out>/<name>.review.md
 ```
 
-It proves three things and refuses to guess at the fourth: the map is above the first module,
-no question marker appears between the first module and the self-test column, every module
-comes before the self-test column, and the column's quoted items carry page citations. It
-cannot prove *coverage* — that the body holds everything the lecture taught — because it cannot
-see the lecture. Coverage is step 3's job and step 7's reconciliation.
+It proves four things and refuses to guess at the fifth: the map is above the first module, no
+question marker appears between the first module and the self-test column, the mastery checklist
+sits before the self-test column with a group per module and a page on every item, and the column's
+quoted items carry page citations. It cannot prove *coverage* — that the body holds everything the
+lecture taught — because it cannot see the lecture. Coverage is step 3's job and step 7's
+reconciliation.
 
-Exit code 1 means a violation; fix it and re-run. Warnings (fewer than 80% of quotes cited,
-unquoted items) are worth fixing too, but do not fail the run.
+Exit code 1 means a violation; fix it and re-run. Warnings are worth fixing too but do not fail
+the run: fewer than 80% of quoted items cited, unquoted items, a checklist with fewer items than
+the body has knowledge points, and quoted English lines with no `译：` translation in a Chinese
+note.
 
 **Then the PDF.** Pandoc builds one self-contained HTML with native MathML, then headless
 Chromium prints it. The notes reference the map by relative path, so **run pandoc from the
@@ -341,9 +408,21 @@ Four failure modes this avoids, all observed in practice: **a relative image pat
 against the working directory**, so building from elsewhere silently drops the map; an
 **already-running** browser absorbs the invocation so `--print-to-pdf` writes nothing (hence
 `--user-data-dir`); a `file:///` URL containing spaces or parentheses does not resolve (hence
-the temp folder); and a print can lose a race with profile creation and write nothing at all —
-if the PDF is missing, delete the profile directory and run the browser once more before
-suspecting anything else.
+the temp folder); and a print loses a race with fresh profile creation and writes nothing at all.
+
+**Print in a retry loop, not once.** On a 14-page note, three of four attempts failed that way, so
+retry up to four times with a **new profile directory each pass** before suspecting anything else:
+
+```powershell
+for ($i = 1; $i -le 4; $i++) {
+  Remove-Item "$tmp\notes.pdf" -ErrorAction SilentlyContinue
+  & "<edge-or-chrome>" --headless=new --disable-gpu --no-first-run `
+    --user-data-dir="$tmp\p$i" --no-pdf-header-footer `
+    --print-to-pdf="$tmp\notes.pdf" "file:///<tmp>/notes.html" 2>$null
+  Start-Sleep -Seconds 3
+  if (Test-Path "$tmp\notes.pdf") { break }
+}
+```
 
 `--embed-resources` inlines the map as a data URI and the stylesheet into the HTML, so the PDF
 is self-contained and the map stays **vector**: its text is selectable and sharp at any zoom,
@@ -368,15 +447,17 @@ Done when `check-review.py` reports no violation and that page spot check passed
 ## Step 7 — Report and deliver
 
 Present the PDF (or the Markdown, if there is no PDF), then report in the reply itself — not
-only inside a file — these four things:
+only inside a file — these five things:
 
 1. **The map** — module and knowledge-point counts, and that it was generated from the note's
    headings so it cannot drift.
-2. **The self-test column** — how many question groups, how many items, how many `unanswered`,
+2. **The mastery checklist** — how many modules it covers and how many tickable items it holds,
+   against the body's knowledge-point count.
+3. **The self-test column** — how many question groups, how many items, how many `unanswered`,
    and every correction finding.
-3. **Unreadable pages** — every `needs-vision` and `needs-human` page, with the trap and what
+4. **Unreadable pages** — every `needs-vision` and `needs-human` page, with the trap and what
    was lost or rebuilt.
-4. **Dropped pages** — every `drop` page with its reason code and one-line reason, so the user
+5. **Dropped pages** — every `drop` page with its reason code and one-line reason, so the user
    can veto any of them.
 
 Then reconcile out loud: `total = readable + needs-vision + needs-human`, `total = keep + drop`,
@@ -384,5 +465,5 @@ and state that every `keep` page has a landing place in the body — either as i
 material now living in the self-test column. Any assumption you made — a merge decision, a
 corrected value, a page you could not judge — belongs in this report.
 
-Done when all four are listed, both equations balance against the input page totals, the
+Done when all five are listed, both equations balance against the input page totals, the
 self-test counts match the column, and the deliverable has been presented.

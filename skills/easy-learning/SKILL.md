@@ -155,18 +155,64 @@ glyphs are double-width. SVG is vector, offline, dependency-free, and printed cr
 
 **Language.** The notes follow the language the user asked in:
 
-- **Chinese prompt → Chinese notes, bilingual terms, English verbatim.** Write the body in Chinese, and
-  on first use give every technical term in both languages: the Chinese term, then the English term in
-  full-width parentheses with no space before the opening parenthesis. The lecture's own wording,
-  definitions and question stems stay in the original English, set apart in blockquotes or quotes from
-  your Chinese narration. Never translate a term away — the student's exam paper will use one of the two.
-- **English prompt → English throughout**, including headings and question blocks, with no Chinese gloss.
+- **Chinese prompt → Chinese notes, bilingual terms, every quoted original translated.** Write the
+  body in Chinese, and on first use give every technical term in both languages: the Chinese term,
+  then the English term in full-width parentheses with no space before the opening parenthesis. The
+  lecture's own wording, definitions and question stems stay in the original English, set apart in
+  blockquotes — **and each English quote is followed by its Chinese translation**, as its own
+  paragraph of the same blockquote (a blank `>` line, then the translation), introduced by `译：`:
+
+  ```markdown
+  > **Accuracy** is the closeness of agreement between a measured value and a true or accepted
+  > value. (p19)
+  >
+  > 译：准确度是指测量值与真值（或公认值）的接近程度。(p19)
+  ```
+
+  The blank `>` matters: without it markdown soft-wraps the two into one paragraph and the
+  translation reads as a continuation of the English.
+
+  Both halves earn their place: the translation is what the reader studies from, and the original is
+  what the exam paper will use. Never translate a term away, and never replace the English with the
+  Chinese — a quote is the lecture's wording or it is not a quote.
+- **English prompt → English throughout**, including headings and question blocks, with no Chinese
+  gloss and no `译：` lines: there is nothing to translate.
 
 Every sample and template in this skill is written in English. Render them in the user's language,
 preserving the structure and the citation suffix.
 
-Layout rules — each changes the output, so none is decoration:
+**Close with a mastery checklist.** The notes end with `## 复习目标｜考前自检清单`: a tickable
+line per capability, grouped by module in the body's order, each carrying its page. It is what
+turns the notes into something the reader can audit before an exam, and its item count is the
+coverage proof in the reader's hands.
 
+```markdown
+## 复习目标｜考前自检清单
+
+> 逐条自问：合上笔记，能否说出或写出这一条？能就打勾。
+
+### 1｜如何正确表达一个数
+
+- [ ] 能说清修约的三条规则，并用「向偶数靠」处理 $3.55$ 与 $3.65$ 这类恰好为 5 的情形（p6）
+- [ ] 能判断一个数有几位有效数字，包括末尾零与前导零两类陷阱（p9–p10）
+```
+
+Four rules make it a checklist rather than a table of contents:
+
+- **A capability, not a topic.** `能写出标准误差 $\sigma_{\bar{x}}$ 的公式并说明它与标准差
+  $\sigma_x$ 差在哪里` — not `标准误差`. The heading already names the topic; the checklist says what
+  the reader must be able to *do* with it.
+- **One item per knowledge point, at least**, grouped under its module in the body's order. Fewer
+  items than the body has knowledge points means something was dropped.
+- **A page citation on every item** — the same invariant as everything else, and what makes a failed
+  tick traceable to the page that fixes it.
+- **`- [ ]` and nothing else.** A markdown task list, so the reader can tick it in an editor and the
+  PDF prints a checkbox column.
+
+Write the items after the body is finished, never before: a checklist written first describes the
+lecture the writer expected.
+
+Layout rules — each changes the output, so none is decoration:
 - **A table only when ≥3 rows share ≥2 attributes** (comparisons, parameter lists, complexity tables).
   Otherwise a list.
 - **Bold two things only**: the term being defined, and the exam-critical number. Never a whole
@@ -194,8 +240,8 @@ A match at index $j$ costs $j+1$ key comparisons; an absent target costs $n$. (p
 ```
 
 Done when the file is on disk, every `keep` page's knowledge appears in exactly one module, every
-extracted question is placed exactly once, no `unanswered` item is silently missing, and every item
-carries a page citation.
+extracted question is placed exactly once, no `unanswered` item is silently missing, every item
+carries a page citation, and — in a Chinese note — no quoted English original is left untranslated.
 
 ## Step 6 — Render the PDF
 
@@ -220,10 +266,24 @@ pandoc "<tmp>\<name>.notes.md" -s --mathml --embed-resources `
 Three failure modes this avoids, all observed in practice: an **already-running** browser absorbs the
 invocation so `--print-to-pdf` silently writes nothing (hence `--user-data-dir`), a `file:///` URL
 containing spaces or parentheses does not resolve (hence the temp directory), and a relative image
-path breaks when the notes are built from somewhere other than their own folder. A print can also lose
-a race with profile creation and write nothing at all — if the PDF is missing, delete the profile
-directory and run the browser once more before suspecting anything else. The step is not done until you
-have confirmed the PDF file exists and is non-empty; a zero exit code proves neither.
+path breaks when the notes are built from somewhere other than their own folder.
+
+**Print in a retry loop, not once.** Chromium loses a race with fresh profile creation and writes
+nothing at all — on a 14-page note, three of four attempts failed that way. Loop up to four times
+with a **new profile directory each pass**, and only then suspect anything else:
+
+```powershell
+for ($i = 1; $i -le 4; $i++) {
+  Remove-Item "$tmp\notes.pdf" -ErrorAction SilentlyContinue
+  & "<edge-or-chrome>" --headless=new --disable-gpu --no-first-run `
+    --user-data-dir="$tmp\p$i" --no-pdf-header-footer `
+    --print-to-pdf="$tmp\notes.pdf" "file:///<tmp>/notes.html" 2>$null
+  Start-Sleep -Seconds 3
+  if (Test-Path "$tmp\notes.pdf") { break }
+}
+```
+
+The step is not done until the PDF exists and is non-empty; a zero exit code proves neither.
 
 `--embed-resources` inlines the SVG as a data URI and the stylesheet into the HTML, so the PDF is
 self-contained and the mind map stays **vector** — its text is selectable and stays sharp at any zoom,

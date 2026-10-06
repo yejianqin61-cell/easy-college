@@ -151,6 +151,38 @@ figcaption {
   color: #5a6b7c;
 }
 
+/* --- the mastery checklist -----------------------------------------------------------------
+   `- [ ]` stays a markdown task list, so it is tickable in an editor and GitHub renders real
+   checkboxes. Chromium does not reliably paint the native control when printing, so the box the
+   reader ticks on paper is drawn with CSS and the input is hidden. */
+ul.task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+ul.task-list > li,
+.task-list-item {
+  list-style: none;
+  margin: 6px 0;
+  padding-left: 0;
+  page-break-inside: avoid;
+}
+
+ul.task-list input[type="checkbox"] {
+  display: none;
+}
+
+ul.task-list > li::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.3px solid #6b7c8c;
+  border-radius: 2px;
+  margin-right: 8px;
+  vertical-align: -1px;
+}
+
 math {
   font-size: 1.05em;
 }

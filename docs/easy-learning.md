@@ -105,3 +105,27 @@ print, with selectable text.
   background. A veto puts the page back into the notes as content.
 - **Do not ask it to shorten.** This skill reorganises; `easy-review` is the skill that itemises. If
   you want a condensed revision document, that is a different request, not a setting.
+
+## The mastery checklist
+
+The notes close with `## 复习目标｜考前自检清单`: one `- [ ]` item per knowledge point, grouped by
+module, each citing its page. It is the one part of the notes written for the exam rather than for the
+reading — the reader ticks what they can already do and is left looking at what they cannot.
+
+Each item states a **capability**, not a topic (`能写出标准误差 $\sigma_{\bar{x}}$ 的公式并说明它与标准差
+$\sigma_x$ 差在哪里`, not `标准误差`), because the heading above already names the topic. It is written
+after the body, never before.
+
+## Quoting the lecture in both languages
+
+A Chinese note keeps the lecture's own wording in English — the wording the exam paper will use — with
+the Chinese underneath, as its own paragraph of the same blockquote:
+
+```markdown
+> **Accuracy** is the closeness of agreement between a measured value and a true or accepted value. (p19)
+>
+> 译：准确度是指测量值与真值（或公认值）的接近程度。(p19)
+```
+
+The blank `>` line matters: without it markdown soft-wraps the two into one paragraph and the
+translation reads as a continuation of the English.

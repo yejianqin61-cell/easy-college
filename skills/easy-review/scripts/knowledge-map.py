@@ -65,9 +65,9 @@ SUB = {"0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅",
 
 # A heading that names a part of the document rather than a piece of knowledge. Only
 # document-furniture words belong here: a module called 练习 or 习题 is still a module.
-NON_BODY = ("自测", "自检", "附录", "报告", "勘误", "纠错",
+NON_BODY = ("自测", "自检", "附录", "报告", "勘误", "纠错", "复习目标", "考前自检",
             "self-test", "self test", "test yourself", "quiz", "question bank",
-            "appendix", "errata", "report")
+            "appendix", "errata", "report", "review goals", "mastery checklist")
 # Leading numbering on a heading: "3.2 ", "3.2、", "第 3 章：". Deliberately not `模块 3｜`:
 # that prefix is part of how the module reads, and shortening it to "模块 3" helps nobody.
 NUM_PREFIX = re.compile(r"^\s*\*{0,2}\s*(?:\d+(?:\.\d+)*\.?\s*[｜|、:：.．]?\s*|"
