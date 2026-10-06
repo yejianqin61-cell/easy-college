@@ -107,7 +107,7 @@ markup)`）——检查器只需证明每条断言后面跟着一个可核查的
 保存下来的网页往往只是外壳，真正的讲义在它 iframe 的那个文件里：这一行会被标成 `frame-shell`，并把
 该走的路径打印出来。台账只覆盖你真正读过的文件，最后的报告要说清这一点。逐条陷阱说明（包括已经排除的
 两个假阳性：`aria-hidden` 不是隐藏；空占位符什么都没藏）在
-[`references/traps.md`](../../skills/easy-learning/references/traps.md)。
+[`references/traps.md`](../../skills/easy-review/references/traps.md)。
 
 ## 怎么用好它
 

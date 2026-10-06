@@ -123,7 +123,7 @@ A saved web page is a shell whose lecture lives in the file it frames: that row 
 stdout prints the path to triage next. The ledger covers the files you actually read, and the final
 report says which. The full trap-by-trap account, with the false positives already excluded
 (`aria-hidden` is not hidden; an empty placeholder hides nothing), is in
-[`references/traps.md`](../skills/easy-learning/references/traps.md).
+[`references/traps.md`](../skills/easy-review/references/traps.md).
 
 ## Using it well
 
