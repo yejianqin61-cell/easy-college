@@ -32,10 +32,10 @@ so do not silence it by deleting the file.
 
 **A skill folder must stand alone.** Nothing inside `skills/<a>/` may reference a file inside
 `skills/<b>/`. When two skills genuinely need the same file, copy it and register the copy in
-`scripts/test-repo.mjs`, which asserts the copies stay byte-identical. `references/traps.md` and
-`scripts/triage.py` are shared between `easy-learning` and `easy-review` this way. The reason is
-concrete: a user can install either skill on its own, and a cross-skill path turns into a broken
-link that nobody notices until a run fails.
+`scripts/test-repo.mjs`, which asserts the copies stay byte-identical. `references/traps.md`,
+`scripts/triage.py` and `scripts/triage-html.py` are shared between `easy-learning` and `easy-review`
+this way. The reason is concrete: a user can install either skill on its own, and a cross-skill path
+turns into a broken link that nobody notices until a run fails.
 
 **Frontmatter carries only what the loader reads.**
 

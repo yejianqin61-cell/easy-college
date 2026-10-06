@@ -10,9 +10,9 @@
 |---|---|
 | 技能文件 | [`skills/easy-review/SKILL.md`](../../skills/easy-review/SKILL.md) |
 | 触发方式 | 模型自行调用——描述任务，或说明你是在复习 |
-| 输入 | 与 `easy-learning` 相同的课件：`.pdf`、`.pptx`、`.docx`、`.md`、`.txt` |
+| 输入 | 与 `easy-learning` 相同的课件：`.pdf`、`.pptx`、`.docx`、`.html`、`.htm`、`.md`、`.txt` |
 | 产出 | `./notes/<课件名>/`：`<name>.review.md`、`<name>.review.mindmap.svg`、`<name>.review.pdf` |
-| 依赖 | Python 3 + `pymupdf`；`pandoc`；出 PDF 需要 Edge 或 Chrome |
+| 依赖 | Python 3（HTML 分诊只用标准库）；PDF 需要 `pymupdf`；`pandoc`；出 PDF 需要 Edge 或 Chrome |
 
 ## 五条规则让它成为"复习笔记"
 
@@ -82,11 +82,32 @@ python skills/easy-review/scripts/check-review.py notes/my-lecture.review.md
 
 - 导图在第一个知识模块之前；
 - 知识正文里没有残留任何题目标记或练习引导语；
+- 复习目标清单存在、在自测专栏之前、每个模块一组、每条都带页码；
 - 自测专栏存在且在最后——它之后不再有模块；
 - 专栏非空，且它的题目组带页码。
 
+引用可以是页码（`(p42)`）、HTML 单元号（`(s03)`），或带来源后缀的形式（`(s03, rebuilt from
+markup)`）——检查器只需证明每条断言后面跟着一个可核查的出处。
+
 退出码 1 会列出违规项。它是刻意机械的，也是刻意狭窄的：它**无法**证明"覆盖全"——它看不到课件——
 那是提取环节的责任，在最后口头配平。
+
+## HTML 课件
+
+同一份讲义也可能是 `.html`。对这个技能来说，除了"什么算一页"之外没有任何变化。
+`scripts/triage-html.py`（只用标准库，无需安装）判定单元——slide 类名、`<section>`、连续兄弟节点、
+或文档自己的标题——把选择记成 `page_model`，单元编号为 `s01`、`s02`……这些编号就是复习笔记里的引用。
+
+它还会写 `<name>.slides.md`（课件的文本层），其中三条通道是分开的：**单元正文**（只有它可以被条目
+引用）、**隐藏文本**（`hidden`、`display:none`、`<template>`——在文件里、不在屏幕上，而且常常就是答案，
+所以得 `needs-human`，绝不悄悄丢掉）、**演讲者备注**（`<aside class="notes">`——可以挖答案，但绝不当
+正文引用）。手工搭的公式（`class="frac"`、`vec`）在纯文本提取里会压扁；dump 会把它们的标记原样列出，
+公式因此可以精确重建，引用写成 `(s01, rebuilt from markup)`。
+
+保存下来的网页往往只是外壳，真正的讲义在它 iframe 的那个文件里：这一行会被标成 `frame-shell`，并把
+该走的路径打印出来。台账只覆盖你真正读过的文件，最后的报告要说清这一点。逐条陷阱说明（包括已经排除的
+两个假阳性：`aria-hidden` 不是隐藏；空占位符什么都没藏）在
+[`references/traps.md`](../../skills/easy-learning/references/traps.md)。
 
 ## 怎么用好它
 

@@ -7,6 +7,9 @@ Writes <out>/ledger.json, <out>/ledger.md and <out>/pages/pNN.png.
 Usage:
     python triage.py INPUT.pdf [INPUT2.pdf ...] [--out DIR] [--dpi 150] [--no-render]
 
+HTML courseware is triaged by scripts/triage-html.py, which writes the same ledger shape, so
+steps 2-7 read either format identically. Both merge their entry into <out>/sources.json.
+
 Exit codes: 0 ok | 1 missing dependency | 2 input could not be read
 """
 
@@ -207,7 +210,42 @@ def write_ledger(out_dir, name, rows, noise, sources, baseline, full_bleed):
     return counts
 
 
+def merge_sources(out_dir, entries):
+    """Add this run's files to <out>/sources.json without dropping another format's rows.
+
+    A session can hold a PDF and an HTML deck at once, so the two triage scripts must agree on
+    this file rather than overwrite each other's.
+    """
+    path = os.path.join(out_dir, "sources.json")
+    existing = []
+    if os.path.isfile(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                loaded = json.load(fh)
+            existing = loaded if isinstance(loaded, list) else []
+        except (ValueError, OSError):
+            existing = []
+    mine = {e["file"] for e in entries}
+    merged = [e for e in existing if e.get("file") not in mine] + entries
+    os.makedirs(out_dir, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(merged, fh, ensure_ascii=False, indent=1)
+
+
+def utf8_when_redirected():
+    """Windows redirects stdout through the ANSI code page, so printing a CJK path raises
+    UnicodeEncodeError and kills a triage that had already finished. A console keeps its own
+    encoding; only a redirected stream is switched to UTF-8."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure") and not stream.isatty():
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main():
+    utf8_when_redirected()
     ap = argparse.ArgumentParser(description="easy-learning PDF page triage")
     ap.add_argument("inputs", nargs="+")
     ap.add_argument("--out", default="notes")
@@ -231,8 +269,8 @@ def main():
             return 2
         counts = write_ledger(out_dir, name, rows, noise, [os.path.abspath(path)],
                               baseline, full_bleed)
-        sources.append({"file": os.path.abspath(path), "pages": len(rows),
-                        "full_bleed": full_bleed, "verdicts": dict(counts),
+        sources.append({"file": os.path.abspath(path), "format": "pdf", "pages": len(rows),
+                        "unit": "page", "full_bleed": full_bleed, "verdicts": dict(counts),
                         "ledger": os.path.join(out_dir, "ledger.md")})
         print(f"{os.path.basename(path)}: {len(rows)} pages | "
               f"readable {counts['readable']} | needs-vision {counts['needs-vision']} | "
@@ -240,9 +278,7 @@ def main():
               f"{' | full-bleed raster' if full_bleed else ''}")
         print(f"  ledger -> {os.path.join(out_dir, 'ledger.md')}")
 
-    os.makedirs(args.out, exist_ok=True)
-    with open(os.path.join(args.out, "sources.json"), "w", encoding="utf-8") as fh:
-        json.dump(sources, fh, ensure_ascii=False, indent=1)
+    merge_sources(args.out, sources)
     return 0
 
 

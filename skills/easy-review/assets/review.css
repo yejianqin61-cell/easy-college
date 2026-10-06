@@ -147,9 +147,12 @@ hr {
   margin: 20px 0;
 }
 
-/* Figures: the knowledge map at the top of the notes, and any rebuilt diagram. */
+/* Figures: the knowledge map at the top of the notes, and any rebuilt diagram.
+   `max-height` is load-bearing: a map taller than the page is clipped by `width: 100%`, and a
+   clipped map silently hides the last modules. Both constraints together fit it on one page. */
 img {
   max-width: 100%;
+  max-height: 23cm;
   height: auto;
 }
 
@@ -160,7 +163,9 @@ figure {
 }
 
 figure img {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: 23cm;
   height: auto;
 }
 

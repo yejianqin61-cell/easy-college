@@ -9,10 +9,11 @@
     {
       "name": "easy-college",
       "source": "./",
-      "description": "Turn a lecture PDF, PPTX or DOCX into notes you can trust: every page judged, every item cited to its source page, the lecture's own questions preserved.",
+      "description": "Turn a lecture PDF, PPTX, DOCX or HTML deck into notes you can trust: every page judged, every item cited to its source page, the lecture's own questions preserved.",
       "category": "education",
       "keywords": [
         "courseware",
+        "html",
         "study-notes",
         "revision-notes",
         "knowledge-map",

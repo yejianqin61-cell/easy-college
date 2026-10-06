@@ -14,6 +14,7 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -114,6 +115,7 @@ section('shared files are byte-identical');
 const SHARED = [
   ['references/traps.md', 'references/traps.md'],
   ['scripts/triage.py', 'scripts/triage.py'],
+  ['scripts/triage-html.py', 'scripts/triage-html.py'],
 ];
 for (const [a, b] of SHARED) {
   const first = path.join(SKILLS, 'easy-learning', a);
@@ -124,6 +126,99 @@ for (const [a, b] of SHARED) {
     pass(`${a}: both copies identical (${fs.statSync(first).size} bytes)`);
   } else {
     fail(`${a}: the two copies differ`);
+  }
+}
+
+section('the HTML triage answers every unit and flags the HTML traps');
+// The fixture is generated here rather than committed: third-party decks are not redistributable,
+// and a four-slide file with one trap per slide is a better test than a real deck anyway -- it says
+// exactly which signature must fire. The script itself is standard library, so Python is the only
+// requirement; without it the check is skipped, not failed.
+function findPython() {
+  for (const candidate of [process.env.PYTHON, 'python3', 'python']) {
+    if (!candidate) continue;
+    try {
+      execFileSync(candidate, ['-c', 'print(1)'], { stdio: 'ignore' });
+      return candidate;
+    } catch {
+      /* try the next interpreter */
+    }
+  }
+  return null;
+}
+
+const python = findPython();
+if (!python) {
+  pass('skipped: no python interpreter found (set PYTHON to run it)');
+} else {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'easy-college-html-'));
+  const deck = path.join(tmp, 'deck.html');
+  fs.writeFileSync(
+    path.join(tmp, 'frame.html'),
+    `<!DOCTYPE html><html><body>${'<p>The framed lab sheet carries the whole procedure, the data table and the questions, so a reader who has only this file can still do the work.</p>'.repeat(6)}</body></html>`,
+  );
+  fs.writeFileSync(
+    deck,
+    `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>fixture</title>
+<style>.answer{display:none}</style></head>
+<body><div class="slides">
+<section class="slide"><h2>Hidden material</h2><p>Visible prose here.</p>
+  <div class="field" hidden=""><label>Arc angle, 2&#966;</label></div>
+  <div class="feedback" hidden=""></div></section>
+<section class="slide"><h2>Diagram</h2><p>Map.</p><img src="map.png"></section>
+<section class="slide"><h2>Formula</h2><p>From Gauss's law.</p>
+  <div class="eq" aria-label="E vector equals F vector divided by q test">
+    <i class="vec">E</i> = <span class="frac"><span><i>F</i></span><span><i>q</i></span></span>
+  </div></section>
+<section class="slide"><h2>Framed sheet</h2><iframe src="frame.html"></iframe></section>
+</div><script>/* deck script */</script></body></html>`,
+  );
+
+  const out = path.join(tmp, 'notes');
+  try {
+    execFileSync(python, [path.join(SKILLS, 'easy-learning', 'scripts', 'triage-html.py'), deck, '--out', out], {
+      encoding: 'utf8',
+    });
+    const ledger = JSON.parse(fs.readFileSync(path.join(out, 'deck', 'ledger.json'), 'utf8'));
+    const rows = ledger.pages;
+    const expected = [
+      ['hidden-content', 'needs-human'],
+      ['image-only', 'needs-vision'],
+      ['formula-markup', 'readable'],
+      ['frame-shell', 'needs-human'],
+    ];
+    if (ledger.page_model !== 'marked-slides') {
+      fail(`page model is '${ledger.page_model}', expected marked-slides`);
+    } else if (rows.length !== 4) {
+      fail(`triaged ${rows.length} unit(s), expected 4`);
+    } else {
+      pass(`4 slides via marked-slides, labels ${rows.map((r) => r.label).join(' ')}`);
+    }
+    for (const [trap, verdict] of expected) {
+      const hit = rows.find((r) => r.traps.includes(trap));
+      if (!hit) fail(`no row reported the ${trap} trap`);
+      else if (hit.verdict !== verdict) {
+        fail(`${trap} produced verdict '${hit.verdict}', expected '${verdict}'`);
+      } else {
+        pass(`${trap} -> ${verdict} on ${hit.label}`);
+      }
+    }
+    // The invariant the whole skill rests on: every unit has exactly one verdict, and they add up.
+    const counted = rows.reduce((n, r) => n + (['readable', 'needs-vision', 'needs-human'].includes(r.verdict) ? 1 : 0), 0);
+    if (counted !== rows.length) fail(`${rows.length - counted} unit(s) have no verdict`);
+    else pass(`every one of ${rows.length} unit(s) carries exactly one verdict`);
+    // And the text dump is the thing the extraction steps actually read.
+    const dump = fs.readFileSync(path.join(out, 'deck', 'deck.slides.md'), 'utf8');
+    const missing = ['### s01', '### s04', 'Formula markup', 'Hidden text', 'frame.html'].filter(
+      (marker) => !dump.includes(marker),
+    );
+    if (missing.length) fail(`the dump is missing: ${missing.join(', ')}`);
+    else pass('the dump carries every unit, plus the markup, hidden and framed channels');
+  } catch (error) {
+    fail(`triage-html.py failed: ${error.message}`);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
   }
 }
 

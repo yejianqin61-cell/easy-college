@@ -2,7 +2,7 @@
 
 **Agent skills that turn a lecture into study notes you can actually trust.**
 
-Drop in a PDF, PPTX, DOCX or Markdown lecture. Get back study notes you can check: the knowledge
+Drop in a PDF, PPTX, DOCX, HTML or Markdown lecture. Get back study notes you can check: the knowledge
 points, a PDF, the lecture's own questions, and an honest report of which pages the pipeline could
 not read and which pages it dropped.
 
@@ -25,6 +25,12 @@ share the same page ledger; they differ in the document they produce.
 
 Ask in Chinese and either skill keeps the lecture's own wording in English with the Chinese underneath
 it — the translation to revise from, the original for the exam paper.
+
+Both read `.pdf`, `.pptx`, `.docx`, `.html`, `.htm`, `.md` and `.txt`. HTML needs no extra package:
+triage decides what a "page" is (a slide, a `<section>`, a heading-delimited part of the document),
+records the choice in the ledger, and numbers the units `s01`, `s02`, … — which then become the
+citations. Saved web pages are handled too, including the common case where the lecture lives in the
+file the page frames.
 
 Reach for `easy-learning` when the material is new. Reach for `easy-review` when you are revising —
 or the moment you say *"put all the questions at the end"*. Three cases where it is worth saying
@@ -96,9 +102,10 @@ Then just ask, in whatever words come naturally: *"turn this deck into study not
 | Need | For |
 |---|---|
 | Node ≥ 18 | the installer |
+| Python 3 | both skills; HTML triage uses the standard library only |
 | Python 3 + `pymupdf` | PDF text, page renders, triage (installed on first run) |
 | `pandoc` | Markdown → self-contained HTML |
-| Edge or Chrome | HTML → PDF (headless) |
+| Edge or Chrome | HTML → PDF (headless), and the render of an HTML deck |
 
 Missing pieces are installed by the skill on first run, and the toolchain is verified by opening a
 file rather than by a successful import.

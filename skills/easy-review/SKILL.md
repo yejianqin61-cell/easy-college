@@ -1,6 +1,6 @@
 ---
 name: easy-review
-description: "Turn courseware into revision notes: a knowledge map at the top, the lecture's knowledge points extracted completely and structured under modules as scannable items, and every exercise pulled out of the body into one self-test column at the end. Use for revision rather than first-pass learning: 复习笔记, 复习资料, 考前复习, 期末复习, 二轮复习, 知识梳理, 考点整理, 结构化笔记, 自测题汇总, 错题自测, \"revision notes\", \"make revision notes from these slides\", \"consolidate this lecture for the exam\", \"put all the questions at the end\", \"I already studied this, help me revise\". The source is always the lecture: the same courseware, read again for a different output shape. For first-time notes that interleave the lecture's questions with the material they test, use easy-learning instead. Don't use with no lecture to read, for a single-page file, or when the user only wants one question answered about a file's contents."
+description: "Turn courseware into revision notes: a knowledge map at the top, the lecture's knowledge points extracted completely and structured under modules as scannable items, and every exercise pulled out of the body into one self-test column at the end. Use for revision rather than first-pass learning: 复习笔记, 复习资料, 考前复习, 期末复习, 二轮复习, 知识梳理, 考点整理, 结构化笔记, 自测题汇总, 错题自测, 网页课件复习, HTML 课件, \"revision notes\", \"make revision notes from these slides\", \"consolidate this lecture for the exam\", \"put all the questions at the end\", \"I already studied this, help me revise\". The source is always the lecture: the same courseware in any format, PDF, PPTX, DOCX or HTML, read again for a different output shape. For first-time notes that interleave the lecture's questions with the material they test, use easy-learning instead. Don't use with no lecture to read, for a single-page file, or when the user only wants one question answered about a file's contents."
 ---
 
 # easy-review
@@ -40,10 +40,13 @@ Two invariants carry over from the same source material, unchanged:
 
 **Every page gets a verdict.** Each page of each input lands in the ledger — verdict, trap,
 keep/drop, reason code, and the module it fed. The ledger reconciles at every step: **rows =
-the sum of all input page counts.**
+the sum of all input page counts.** In an HTML deck "page" is a decision rather than a given:
+triage detects the unit (slide, `<section>`, or the whole document), records it as `page_model`,
+and numbers the units `s01`, `s02`, … — which then become this deck's citation system.
 
 **Every item gets a page number.** No knowledge point, formula, table, question or correction
-enters the notes without its source page, so any line can be checked against the original.
+enters the notes without its source page, so any line can be checked against the original. For an
+HTML input that number is the ledger's unit label — `(s03)`, `(s03, rebuilt from markup)`.
 
 Outputs land in `./notes/<input-name>/`:
 
@@ -54,6 +57,7 @@ Outputs land in `./notes/<input-name>/`:
 | `<name>.review.mindmap.svg` | the knowledge map, generated from the note's own headings | embedded at the top |
 | `<name>.review.pdf` | the deliverable, if the renderer is available | the user |
 | `pages/pNN.png` | renders, for the vision pass and for the user to check | step 1, step 7 |
+| `<name>.slides.md` | HTML only: the extractable text, one block per unit, plus the hidden and speaker-note channels | steps 2–4 |
 
 If the session also produced first-pass notes, keep both: study from `easy-learning`'s notes,
 revise from these. Same folder, different stems, no collision.
@@ -68,23 +72,36 @@ this session. Detect each format, then confirm an extractor **and** a renderer b
 | `.pdf` | `pymupdf` (`scripts/triage.py`) | `pymupdf` page render | `python -m pip install --quiet pymupdf` |
 | `.pptx` | `python-pptx` text + speaker notes | LibreOffice `--convert-to pdf`, then render | `python -m pip install --quiet python-pptx` |
 | `.docx` | `pandoc -t gfm` | convert to PDF, then render | pandoc is usually already present |
+| `.html` / `.htm` | `scripts/triage-html.py` (standard library only) | `--render` prints the deck in headless Chromium | nothing |
 | `.md` / `.txt` | read directly | none needed | — |
 
 **Which source to read.** If this session already triaged the same lecture, reuse the renders and
 the ledger — re-reading 76 pages to produce the same verdicts is waste. If it did not, triage
-from scratch: `scripts/triage.py` here is the same script the `easy-learning` skill ships, so
-the two agree page for page when a session uses both.
+from scratch: `scripts/triage.py` here is the same script the `easy-learning` skill ships, and so is
+`scripts/triage-html.py` for HTML, so the two agree page for page when a session uses both.
 
 ```
-scripts/triage.py          per-page ledger + renders
+scripts/triage.py          per-page ledger + renders (PDF)
+scripts/triage-html.py     per-unit ledger + text dump (HTML)
 references/traps.md        trap signature → recovery
 ```
+
+An HTML file has no page objects, so `triage-html.py` decides what a page is — a slide class, then
+`<section>`s, then a run of same-tag siblings, then top-level headings, then the whole file — prints
+the model it used, and records it as `page_model`. `single-document` on a deck that is visibly a
+slide deck means detection failed: name the element yourself with
+`--slide-selector "section.slide"`. A saved web page is a shell whose content sits in the file it
+frames: the row gets `frame-shell` and stdout prints the path, so **triage that file too** and count
+both ledgers as the one input. `--render` prints the deck; when the print stylesheet does not put one
+slide on one page the printed page count will not match the unit count — the script says so, and a
+render must then be checked against its ledger row before it is trusted.
 
 This skill is self-contained on purpose: its folder is the unit that gets installed, and nothing
 in it reaches into a sibling skill's files. If `pymupdf` cannot be installed, the two things you
 lose are **the page renders** and **the trap signatures** — say so, extract with a plain
 `pymupdf` text pass, and mark the ledger lower-confidence rather than pretending the traps were
-checked.
+checked. HTML triage needs no package at all: it is standard library, and only its optional renders
+need a browser.
 
 Install quietly, then **verify by opening one input and printing its page or slide count** — a
 successful import is not evidence that the file parses.
@@ -100,7 +117,10 @@ $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 ```
 
 This affects arguments only. File contents are unaffected as long as every script here reads and
-writes UTF-8, which they do.
+writes UTF-8, which they do. The same code page also breaks a script's *output*: printing a path like
+`…\大物\week2\deck.html` into a pipe raises `UnicodeEncodeError` and kills a run that had already
+finished, which is why the bundled scripts switch a redirected stdout to UTF-8 and leave a console's
+own encoding alone.
 
 Done when every input has a confirmed extractor and renderer, its page/slide count has been
 printed, and it is settled whether this is a fresh triage or a reused ledger.
@@ -120,6 +140,25 @@ one verdict:
 A page whose content is a chart, a screenshot, or an equation is never `readable` just because
 the text layer is non-empty. This step is **not** optional for revision notes: revision is
 where an error read off a bad text layer gets memorised as fact.
+
+For an HTML input, `triage-html.py` writes the same ledger plus `<name>.slides.md`, which is the
+deck's text layer — one block per unit, and the thing steps 3 and 4 read. It keeps three channels
+apart: the **unit text** (the only thing an item may cite), the **hidden text** (in the file, not on
+the screen — often the answer key or a control panel the deck reveals later, so it is content and
+gets `needs-human`), and the **speaker notes** (the presenter's private channel: mine it for answers,
+never cite it). The traps and their verdicts:
+
+| HTML trap | Verdict | Recovery |
+|---|---|---|
+| `hidden-content`, `hidden-slide` | `needs-human` | decide whether it belongs in the note, then carry it |
+| `frame-shell` | `needs-human` | triage the framed file; this ledger does not cover it |
+| `js-rendered` | `needs-vision` | render in a browser, or ask for the built deck |
+| `image-only`, `math-image`, `svg-only` | `needs-vision` | read the render, cite `(s12, rebuilt from image)` |
+| `thin-text`, `empty-text` | `needs-vision` | a picture-led deck: read the render |
+| `image-alt` | `readable` | the picture's content is in its `alt`; cite `(s12, from alt text)` |
+| `formula-markup` | `readable` | rebuild from the markup block in the dump, never from the flattened line |
+| `math-source` | `readable` | the LaTeX sits in the markup; use it verbatim |
+| `fragments`, `speaker-notes`, `duplicate` | `readable` | a click-to-reveal build, a private channel, or a repeat — decide by step 2, never by reflex |
 
 Done when every page of every input has exactly one verdict and the row count equals the sum of
 the input page counts.
@@ -179,8 +218,11 @@ Structural rules:
 - `####` — a sub-point, only when a knowledge point genuinely has parts (`Rule 1`–`Rule 4`).
   Never to nest a bullet list that a list would carry better.
 - One page citation on **every** item — `(p42)`, or `(p42, rebuilt from image)` for a value read
-  from a render rather than the text layer.
-- Formulas are inline LaTeX: `$T^{2} = 4\pi^{2}L/g$`.
+  from a render rather than the text layer. For an HTML source it is the ledger's unit label:
+  `(s03)`, `(s03, from alt text)`, `(s03, rebuilt from markup)`.
+- Formulas are inline LaTeX: `$T^{2} = 4\pi^{2}L/g$`. **No space inside a `$...$` span** — `$E = $ 5850`
+  is not math to pandoc and prints its dollars literally, so the note ships the formula as source.
+  A space *before* an opening `$` is fine; display math (`$$...$$`) is untouched.
 - Bold exactly two things, never a whole sentence: the **term being defined**, and the
   **exam-critical number**.
 - A table only when ≥3 rows share ≥2 attributes. Otherwise a list.
@@ -384,16 +426,16 @@ directory, not against `-o`, and from anywhere else it silently drops the map in
 a broken `src`:
 
 ```powershell
-# a space-free temp folder holding the note and its map under ASCII names
+# a space-free temp folder holding the note and its map under their OWN names
 $tmp = "C:\temp\review"          # no spaces, no parentheses: file:/// URLs cannot resolve them
 New-Item -ItemType Directory -Force $tmp | Out-Null
-Copy-Item "$out\<name>.review.md" "$tmp\notes.md"
-Copy-Item "$out\<name>.review.mindmap.svg" "$tmp\notes.mindmap.svg"
-# the copy now references notes.mindmap.svg; if you would rather not touch the note, pass
-# --resource-path="$tmp" to pandoc and run it from anywhere
+Copy-Item "$out\<name>.review.md" "$tmp\"
+Copy-Item "$out\<name>.review.mindmap.svg" "$tmp\"
+# keep the names: the note references its map by file name, so renaming the copy — to `notes.md`
+# and `notes.mindmap.svg`, say — leaves the reference pointing at nothing and pandoc embeds no map
 
 Push-Location $tmp                 # ← this is what makes the relative image resolve
-pandoc "notes.md" -s --mathml --embed-resources `
+pandoc "<name>.review.md" -s --mathml --embed-resources `
   --metadata title="<title, in the user's language>" -c "<skill>\assets\review.css" `
   -o "notes.html"
 Pop-Location
@@ -405,13 +447,15 @@ Pop-Location
 ```
 
 Four failure modes this avoids, all observed in practice: **a relative image path resolves
-against the working directory**, so building from elsewhere silently drops the map; an
+against the working directory**, so building from elsewhere silently drops the map; renaming the
+copied map while the note still references the old name drops it just as silently; an
 **already-running** browser absorbs the invocation so `--print-to-pdf` writes nothing (hence
-`--user-data-dir`); a `file:///` URL containing spaces or parentheses does not resolve (hence
-the temp folder); and a print loses a race with fresh profile creation and writes nothing at all.
+`--user-data-dir`); and a `file:///` URL containing spaces or parentheses does not resolve (hence
+the temp folder).
 
-**Print in a retry loop, not once.** On a 14-page note, three of four attempts failed that way, so
-retry up to four times with a **new profile directory each pass** before suspecting anything else:
+**Print in a retry loop, not once, and wait for the file rather than sleeping a fixed time.** On a
+14-page note, three of four attempts failed that way, and a single check three seconds after the
+launcher returns reports failure on a print that is merely slow — poll, and require a non-empty file:
 
 ```powershell
 for ($i = 1; $i -le 4; $i++) {
@@ -419,8 +463,11 @@ for ($i = 1; $i -le 4; $i++) {
   & "<edge-or-chrome>" --headless=new --disable-gpu --no-first-run `
     --user-data-dir="$tmp\p$i" --no-pdf-header-footer `
     --print-to-pdf="$tmp\notes.pdf" "file:///<tmp>/notes.html" 2>$null
-  Start-Sleep -Seconds 3
-  if (Test-Path "$tmp\notes.pdf") { break }
+  for ($t = 0; $t -lt 30; $t++) {                 # the print is slow, not absent
+    if ((Test-Path "$tmp\notes.pdf") -and (Get-Item "$tmp\notes.pdf").Length -gt 0) { break }
+    Start-Sleep -Seconds 1
+  }
+  if ((Test-Path "$tmp\notes.pdf") -and (Get-Item "$tmp\notes.pdf").Length -gt 0) { break }
 }
 ```
 
@@ -462,8 +509,9 @@ only inside a file — these five things:
 
 Then reconcile out loud: `total = readable + needs-vision + needs-human`, `total = keep + drop`,
 and state that every `keep` page has a landing place in the body — either as items, or as
-material now living in the self-test column. Any assumption you made — a merge decision, a
-corrected value, a page you could not judge — belongs in this report.
+material now living in the self-test column. For an HTML source, also state the `page_model` the
+ledger used, the unit count, and any file it frames that you triaged as well. Any assumption you
+made — a merge decision, a corrected value, a page you could not judge — belongs in this report.
 
 Done when all five are listed, both equations balance against the input page totals, the
 self-test counts match the column, and the deliverable has been presented.

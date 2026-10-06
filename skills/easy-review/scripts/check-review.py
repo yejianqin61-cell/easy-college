@@ -42,7 +42,11 @@ CHECKLIST = ("复习目标", "考前自检", "自检清单", "review goals", "ma
 NON_BODY = ("自测", "自检", "附录", "报告", "勘误", "纠错", "复习目标", "考前自检",
             "self-test", "self test", "test yourself", "quiz", "question bank",
             "appendix", "errata", "report", "review goals", "mastery checklist")
-CITATION = re.compile(r"[（(]\s*p\s*\d+(?:\s*[–~-]\s*\d+)?(?:\s*[,，][^）)]*)?\s*[)）]")
+# The source citation at the end of an item: `(p42)`, `(p42–46)`, `(s03)` for an HTML unit,
+# `(slide 3)` / `(第 12 页)` for a hand-written one, `(s02、s11)` for several units at once, and any
+# `, rebuilt from markup` provenance suffix.
+CITATION = re.compile(r"[（(]\s*(?:[ps]\s*|slide\s*|第\s*)\d+(?:\s*[–~-]\s*\d+)?\s*页?"
+                      r"(?:\s*[,，、;；和与及][^）)]*)?\s*[)）]")
 ITEM = re.compile(r"^\s*(?:>\s*)?(?:\*{1,2})?\s*(?:\d+\s*[.)、]|[-*]\s|Q\d+|自测\s*\d+)")
 # A task-list entry: the checklist's item shape. `- [ ]` / `- [x]`.
 TASK = re.compile(r"^\s*[-*]\s+\[[ xX]\]\s*\S")
@@ -143,7 +147,39 @@ def quote_block_end(lines, start):
     return end
 
 
+def utf8_when_redirected():
+    """Windows redirects stdout through the ANSI code page, so printing a CJK path raises
+    UnicodeEncodeError and kills a check that had already finished. A console keeps its own
+    encoding; only a redirected stream is switched to UTF-8."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure") and not stream.isatty():
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
+def malformed_math(lines):
+    """`$E = $` is not math: pandoc prints the dollars literally, so the formula ships as source.
+
+    Display math (`$$...$$`) is skipped, and a space *before* an opening `$` is legitimate.
+    """
+    out = []
+    for i, line in enumerate(lines):
+        if "$" not in line:
+            continue
+        bare = line.replace("$$", "")
+        if bare.count("$") % 2:
+            out.append(i)
+            continue
+        parts = bare.split("$")
+        if any(parts[n] != parts[n].strip() for n in range(1, len(parts), 2)):
+            out.append(i)
+    return out
+
+
 def main():
+    utf8_when_redirected()
     ap = argparse.ArgumentParser(description="easy-review revision-note checker")
     ap.add_argument("notes")
     ap.add_argument("--json", action="store_true", help="emit the result as JSON")
@@ -276,6 +312,15 @@ def main():
             warnings.append(f"{len(untranslated)} quoted English line(s) carry no {TRANSLATION} "
                             f"translation (first at line {untranslated[0] + 1})")
     summary.setdefault("untranslated_quotes", 0)
+
+    # 6. Formula hygiene: a `$...$` span that starts or ends with a space is not math to pandoc.
+    #    It prints as literal source in the PDF, which the reader cannot tell was a mistake.
+    loose = malformed_math(lines)
+    summary["malformed_math"] = len(loose)
+    if loose:
+        warnings.append(f"{len(loose)} formula span(s) start or end with a space inside `$...$` "
+                        f"(first at line {loose[0] + 1}): pandoc prints them literally, so write "
+                        f"`$E = 5850$` and not `$E = $ 5850`")
 
     if args.json:
         print(json.dumps({"file": args.notes, "summary": summary, "violations": violations,

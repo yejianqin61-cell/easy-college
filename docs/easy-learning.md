@@ -14,9 +14,9 @@ If you have already studied the material and want to revise, you want
 |---|---|
 | Skill file | [`skills/easy-learning/SKILL.md`](../skills/easy-learning/SKILL.md) |
 | Invocation | model-invoked — describe the task, or upload a lecture |
-| Input | `.pdf`, `.pptx`, `.docx`, `.md`, `.txt` lecture material |
-| Output | `./notes/<lecture>/`: notes (`.md` + `.pdf`), a mind map (`.svg`), a ledger, page renders |
-| Needs | Python 3 + `pymupdf`; `pandoc`; Edge or Chrome for the PDF |
+| Input | `.pdf`, `.pptx`, `.docx`, `.html`, `.htm`, `.md`, `.txt` lecture material |
+| Output | `./notes/<lecture>/`: notes (`.md` + `.pdf`), a mind map (`.svg`), a ledger, page renders, and for HTML a per-unit text dump |
+| Needs | Python 3 (HTML triage is standard library); `pymupdf` for PDFs; `pandoc`; Edge or Chrome for the PDF |
 
 ## When it runs
 
@@ -80,6 +80,46 @@ decks — is [`references/traps.md`](../skills/easy-learning/references/traps.md
 - **Author errors.** The lecture contradicts itself, or its answer key does not match its questions.
   The corrections are flagged with their page rather than silently fixed — the discrepancy is often
   the most exam-relevant thing on the page.
+
+## HTML courseware
+
+An HTML deck needs no package to read: `scripts/triage-html.py` is standard library, and it writes the
+same ledger as the PDF path, so everything after triage is unchanged.
+
+What differs is that an HTML file has no pages, so triage decides what one is and says so. It looks
+for a slide class or `data-slide` attribute, then `<section>`s, then a run of same-tag siblings, then
+top-level headings, and only then falls back to treating the whole file as one unit. The choice is
+printed and recorded as `page_model`, and the units it numbers become the citation system: `(s03)`
+rather than `(p42)`. When detection is wrong, `--slide-selector "section.slide"` names the element
+yourself.
+
+Alongside the ledger it writes `<name>.slides.md` — the deck's text layer, one block per unit — which
+is what the extraction steps read. That dump keeps three channels apart, because in HTML they are
+genuinely different things:
+
+- the **unit text**, the only thing a knowledge point may cite;
+- **hidden text** — `hidden`, `display:none`, `class="hidden"`, `<template>`. It is in the file and
+  not on the screen, and in courseware it is disproportionately valuable: an answer key, a model
+  answer, a control panel that appears for one geometry only, a backup slide holding the part of the
+  derivation the lecturer skips. It gets `needs-human`, never a silent drop;
+- **speaker notes** — `<aside class="notes">`. Mined for answers, never cited as slide text.
+
+Three HTML signatures are worth knowing before you read a ledger:
+
+- **Hand-built formulas.** A formula assembled from spans (`class="frac"`, `vec`, `sqrt`) flattens in
+  the text layer into `E = FEqtestEq. 2.4`. The dump prints the block's markup instead, so the
+  formula is rebuilt exactly, and the note cites `(s01, rebuilt from markup)`.
+- **Content in a framed file.** A saved web page is a shell; its lecture lives in the sibling file it
+  frames. Triage flags that row `frame-shell` and prints the path to triage next. The ledger covers
+  the files you actually read, and the report says which.
+- **Slides built by script.** A dev-server build (Slidev, an unbuilt Marp file) has no text in the
+  file at all. That is `js-rendered`, and the answer is the built export or a browser render — not a
+  guess.
+
+Two false positives are already handled, both measured on a 700 KB lab guide: `aria-hidden="true"` is
+*not* hidden (it hides content from a screen reader, not from the screen, and flagged 12 of 15 units
+before the rule was narrowed), and an empty placeholder such as `<div class="feedback" hidden="">`
+hides nothing.
 
 ## The mind map
 

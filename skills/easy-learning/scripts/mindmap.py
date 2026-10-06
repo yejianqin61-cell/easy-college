@@ -46,6 +46,76 @@ SOFT = "#5a6b7c"
 
 THIN = set("iljI.,:;'|!()[]")
 
+# Plain-text equivalents so a label reads as `T²–L` rather than `T^2–L` in SVG, which has no
+# math typesetting of its own.
+SUPER = {"0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵",
+         "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "+": "⁺", "-": "⁻"}
+SUB = {"0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅",
+       "6": "₆", "7": "₇", "8": "₈", "9": "₉"}
+
+
+def plain_math(text):
+    """SVG text is not typeset, so `$1/r^2$` would print with its dollar signs and braces.
+
+    This is a label, not the formula: strip the delimiters, keep the symbols. The notes carry the
+    typeset version; the map only has to be recognisable at a glance.
+    """
+    if "$" not in text and "\\" not in text:
+        return text
+    text = re.sub(r"\$([^$]*)\$", r"\1", text)
+    # Structures first, while their braces are still there: a fraction is a over b, and a vector
+    # is its letter with a combining arrow.
+    text = re.sub(r"\\frac\{([^{}]*)\}\{([^{}]*)\}", r"\1/\2", text)
+    text = re.sub(r"\\(?:vec|overrightarrow)\{?([A-Za-z])\}?", "\\1\u20d7", text)
+    text = re.sub(r"\\hat\{?([A-Za-z])\}?", "\\1\u0302", text)
+    text = re.sub(r"\\(?:bar|overline)\{?([A-Za-z])\}?", "\\1\u0304", text)
+    text = re.sub(r"\\(?:text|mathrm|operatorname)\{([^{}]*)\}", r"\1", text)
+    for latex, glyph in (("\\pi", "π"), ("\\theta", "θ"), ("\\sigma", "σ"), ("\\Delta", "Δ"),
+                         ("\\delta", "δ"), ("\\mu", "μ"), ("\\rho", "ρ"), ("\\lambda", "λ"),
+                         ("\\epsilon", "ε"), ("\\varepsilon", "ε"), ("\\omega", "ω"),
+                         ("\\Omega", "Ω"), ("\\phi", "φ"), ("\\infty", "∞"), ("\\partial", "∂"),
+                         ("\\times", "×"), ("\\cdot", "·"), ("\\pm", "±"), ("\\mp", "∓"),
+                         ("\\sqrt", "√"), ("\\le", "≤"), ("\\leq", "≤"), ("\\ge", "≥"),
+                         ("\\geq", "≥"), ("\\approx", "≈"), ("\\neq", "≠"), ("\\to", "→"),
+                         ("\\rightarrow", "→"), ("\\sum", "Σ"), ("\\int", "∫"), ("\\log", "log"),
+                         ("\\quad", " "), ("\\,", " "), ("\\;", " "), ("\\!", ""), ("\\left", ""),
+                         ("\\right", ""), ("\\", "")):
+        text = text.replace(latex, glyph)
+    text = re.sub(r"\^\{?([0-9+-]+)\}?", lambda m: SUPER.get(m.group(1), "^" + m.group(1)), text)
+    text = re.sub(r"_\{?([0-9A-Za-z]+)\}?", lambda m: SUB.get(m.group(1), "_" + m.group(1)), text)
+    return re.sub(r"\{([^{}]*)\}", r"\1", text)       # whatever braces are left held nothing
+
+
+def link_target(path):
+    """The map's file name as a markdown link target.
+
+    Spaces, parentheses, `#` and `?` end a link destination early, so a notes file called
+    `Lecture (2024).notes.md` produced a reference pandoc could not resolve. Percent-encoding
+    those characters is what makes the link survive both markdown and pandoc's resource fetch;
+    the rest of the name, including CJK, is left readable.
+    """
+    return os.path.basename(path).translate(
+        str.maketrans({" ": "%20", "(": "%28", ")": "%29", "<": "%3C", ">": "%3E",
+                       "#": "%23", "?": "%3F"}))
+
+
+def shorten(text, limit=110):
+    """A heading is a label, not a sentence: drop markdown emphasis and keep one clause."""
+    text = re.sub(r"\*{1,3}(.+?)\*{1,3}", r"\1", text)
+    text = re.sub(r"`([^`]*)`", r"\1", text)
+    text = re.sub(r"\s*\{#[^}]*\}\s*$", "", text)     # a heading anchor is not part of the name
+    text = plain_math(text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) > limit:
+        # Prefer cutting at a clause boundary so the label still reads as a label.
+        head = text[:limit]
+        for mark in ("（", "(", "：", ":", "；", ";", "，", ",", " "):
+            cut = head.rfind(mark)
+            if cut > limit * 0.5:
+                return head[:cut].rstrip() + "…"
+        return head.rstrip() + "…"
+    return text
+
 
 def text_width(text, size):
     """Approximate advance width; CJK and fullwidth forms count as one em."""
@@ -151,7 +221,11 @@ class Node:
 
 
 def parse(path):
-    """Return (title, [(module, [point, ...]), ...]) from the notes' headings."""
+    """Return (title, [(module, [point, ...]), ...]) from the notes' headings.
+
+    Labels are shortened and their LaTeX is turned into plain text: an SVG has no math typesetting,
+    so a heading like `## 5｜电偶极矩 $\\vec{p}$` would otherwise print its source on the map.
+    """
     root = None
     modules = []
     for line in open(path, encoding="utf-8"):
@@ -159,11 +233,11 @@ def parse(path):
             continue
         if line.startswith("### "):
             if modules:
-                modules[-1][1].append(line[4:].strip())
+                modules[-1][1].append(shorten(line[4:].strip()))
         elif line.startswith("## "):
-            modules.append((line[3:].strip(), []))
+            modules.append((shorten(line[3:].strip()), []))
         elif line.startswith("# ") and root is None:
-            root = line[2:].strip()
+            root = shorten(line[2:].strip())
     # A module with no knowledge points is document furniture, not structure.
     return root, [(m, pts) for m, pts in modules if pts]
 
@@ -244,7 +318,20 @@ def build(title, modules, accents):
     )
 
 
+def utf8_when_redirected():
+    """Windows redirects stdout through the ANSI code page, so printing a CJK path raises
+    UnicodeEncodeError and kills a run that had already finished. A console keeps its own
+    encoding; only a redirected stream is switched to UTF-8."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure") and not stream.isatty():
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main():
+    utf8_when_redirected()
     ap = argparse.ArgumentParser(description="easy-learning mind map from notes headings")
     ap.add_argument("notes")
     ap.add_argument("-o", "--out")
@@ -275,7 +362,7 @@ def main():
           + (f", {skipped} appendix section(s) skipped" if skipped else ""))
 
     if args.insert:
-        ref = f"![{args.alt}]({os.path.basename(out)})"
+        ref = f"![{args.alt}]({link_target(out)})"
         lines = open(args.notes, encoding="utf-8").read().split("\n")
         lines = [l for l in lines if l.strip() != ref and not l.startswith(f"![{args.alt}](")]
         first_module = next((i for i, l in enumerate(lines) if l.startswith("## ")), len(lines))

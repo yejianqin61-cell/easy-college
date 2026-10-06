@@ -12,9 +12,9 @@ what they know.
 |---|---|
 | Skill file | [`skills/easy-review/SKILL.md`](../skills/easy-review/SKILL.md) |
 | Invocation | model-invoked — describe the task, or say you are revising |
-| Input | the same courseware `easy-learning` reads: `.pdf`, `.pptx`, `.docx`, `.md`, `.txt` |
+| Input | the same courseware `easy-learning` reads: `.pdf`, `.pptx`, `.docx`, `.html`, `.htm`, `.md`, `.txt` |
 | Output | `./notes/<lecture>/`: `<name>.review.md`, `<name>.review.mindmap.svg`, `<name>.review.pdf` |
-| Needs | Python 3 + `pymupdf`; `pandoc`; Edge or Chrome for the PDF |
+| Needs | Python 3 (HTML triage is standard library); `pymupdf` for PDFs; `pandoc`; Edge or Chrome for the PDF |
 
 ## Five rules make it a revision note
 
@@ -92,12 +92,38 @@ Exit code 0 means the document obeys its own rules:
 
 - the map sits above the first knowledge module;
 - no question marker or practice prompt survives anywhere in the knowledge body;
+- the mastery checklist is present, sits before the self-test column, has a group per module, and
+  cites a page on every item;
 - the self-test column exists and is last — no module comes after it;
 - the column is not empty, and its question groups carry page citations.
+
+A citation may be a page (`(p42)`), an HTML unit (`(s03)`), or either form with a provenance suffix
+(`(s03, rebuilt from markup)`), because the checker only has to prove that *something* citable
+follows the claim.
 
 Exit code 1 lists the violations. It is deliberately mechanical, and deliberately narrow: it cannot
 prove *coverage* — that the body really holds everything the lecture taught — because it cannot see
 the lecture. That stays the extracting agent's job, reconciled out loud at the end of the run.
+
+## HTML courseware
+
+The same lecture can arrive as `.html`, and nothing about this skill changes except what a page is.
+`scripts/triage-html.py` (standard library, no install) decides the unit — a slide class, a
+`<section>`, a run of siblings, or the document's own headings — records the choice as `page_model`,
+and numbers the units `s01`, `s02`, … Those labels are the citations in the revision note.
+
+It also writes `<name>.slides.md`, the deck's text layer, which keeps three channels apart: the unit
+text (the only thing an item may cite), **hidden text** (`hidden`, `display:none`, `<template>` — in
+the file, not on the screen, and often the answer key, so it is `needs-human` and never a silent
+drop), and **speaker notes** (`<aside class="notes">` — mine it for answers, never cite it as slide
+text). Hand-built formulas (`class="frac"`, `vec`) flatten in a text pass; the dump prints their
+markup instead, so the formula is rebuilt exactly and cited `(s01, rebuilt from markup)`.
+
+A saved web page is a shell whose lecture lives in the file it frames: that row is `frame-shell`, and
+stdout prints the path to triage next. The ledger covers the files you actually read, and the final
+report says which. The full trap-by-trap account, with the false positives already excluded
+(`aria-hidden` is not hidden; an empty placeholder hides nothing), is in
+[`references/traps.md`](../skills/easy-learning/references/traps.md).
 
 ## Using it well
 

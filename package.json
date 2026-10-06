@@ -1,6 +1,6 @@
 {
   "name": "easy-college",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Agent skills that turn university courseware into faithful study notes and revision notes, with a per-page triage ledger, a knowledge map, and the lecture's own self-test questions in a column at the end.",
   "type": "module",
   "bin": {
@@ -36,6 +36,7 @@
     "pdf",
     "pptx",
     "docx",
+    "html",
     "knowledge-extraction",
     "quiz",
     "claude",

@@ -1,6 +1,6 @@
 ---
 name: easy-learning
-description: "Turn uploaded courseware into study notes: a per-page triage ledger, a Markdown of knowledge points interleaved with the lecture's own self-test questions, a PDF, and an honest report of the pages that were unreadable and the pages that were dropped as background. Use when the user uploads 课件/讲义/PPT/slides/PDF and wants notes out of them: 整理成笔记, 提炼知识点, 提取课件试题, 课件转笔记, 讲义总结, 划重点, 期末复习资料, 考前突击, \"make notes from these slides\", \"extract the key points\", \"pull the quiz questions\", \"turn this lecture into notes\". Also when another skill needs a lecture mined for knowledge points or self-test items. Don't use for a raw text dump with no structure, for a single-page file, or when the user only wants one question answered about a file's contents."
+description: "Turn uploaded courseware into study notes: a per-page triage ledger, a Markdown of knowledge points interleaved with the lecture's own self-test questions, a PDF, and an honest report of the pages that were unreadable and the pages that were dropped as background. Use when the user uploads 课件/讲义/PPT/slides/PDF/HTML and wants notes out of them: 整理成笔记, 提炼知识点, 提取课件试题, 课件转笔记, 讲义总结, 划重点, 期末复习资料, 考前突击, 网页课件, HTML 课件, 保存的网页, \"make notes from these slides\", \"extract the key points\", \"pull the quiz questions\", \"turn this lecture into notes\". Also when another skill needs a lecture mined for knowledge points or self-test items. Don't use for a raw text dump with no structure, for a single-page file, or when the user only wants one question answered about a file's contents."
 ---
 
 # easy-learning
@@ -20,6 +20,11 @@ notes without the source page it came from. A reader must be able to open the or
 cited page and find that content there. This is what makes the notes checkable instead of merely
 plausible, and it is not optional formatting.
 
+**An HTML deck's "page" is a decision, not a given.** An HTML file has no page objects, so triage
+decides what a page is — one slide, one `<section>`, or the whole document — records the choice as the
+ledger's `page_model`, and numbers the units `s01`, `s02`, … Those numbers are that deck's citation
+system, and the report says which model was used.
+
 Outputs land in `./notes/<input-name>/`:
 
 | File | Holds | Read by |
@@ -30,6 +35,7 @@ Outputs land in `./notes/<input-name>/`:
 | `<name>.notes.mindmap.svg` | the overview map, generated from the notes' headings | embedded in the notes |
 | `<name>.notes.pdf` | the deliverable | the user |
 | `pages/pNN.png` | renders, for the vision pass and for the user to check | step 1, step 7 |
+| `<name>.slides.md` | HTML only: the extractable text, one block per unit, plus the hidden and speaker-note channels | steps 2–5 |
 
 ## Step 0 — Inventory and toolchain
 
@@ -42,13 +48,46 @@ anything.
 | `.pdf` | `pymupdf` (`scripts/triage.py`) | `pymupdf` page render | `python -m pip install --quiet pymupdf` |
 | `.pptx` | `python-pptx` text + speaker notes | LibreOffice `--convert-to pdf`, then render | `python -m pip install --quiet python-pptx` |
 | `.docx` | `pandoc -t gfm` | convert to PDF, then render | pandoc is usually already present |
+| `.html` / `.htm` | `scripts/triage-html.py` (standard library only) | `--render` prints the deck in headless Chromium | nothing |
 | `.md` / `.txt` | read directly | none needed | — |
 
 Install quietly, then **verify by opening one input and printing its page or slide count** — a
 successful import is not evidence that the file parses.
 
+**For an HTML input, the count is the unit count in the ledger, and the model that produced it
+matters.** `triage-html.py` has no page objects to read, so it detects them: a slide class or
+`data-slide` attribute first, then `<section>`s, then a run of same-tag siblings, then top-level
+headings, and finally the whole file as one unit. It prints which model it used
+(`marked-slides`, `sections`, `heading-h2`, `single-document`) and records it as `page_model`.
+Read that line before extracting: `single-document` on something that is visibly a slide deck means
+detection failed, and the fix is to name the element yourself:
+
+```bash
+python scripts/triage-html.py deck.html --slide-selector "section.slide"   # or ".marp-slide"
+```
+
+A saved web page is a shell: its content sits in a sibling file that it frames. Triage says so —
+the row gets `frame-shell`, the ledger lists the frame target, and stdout prints the path. **Triage
+that file too**, then treat the two ledgers as one input: the rows are the sum over the files you
+actually triaged. A file whose slides are built by script gives `js-rendered` rather than text; if
+the deck ships a build step or an export, ask for that instead of guessing.
+
 Done when every input has a confirmed extractor and renderer, and its page/slide count has been
 printed.
+
+**Windows PowerShell 5.1 mangles non-ASCII arguments** passed to `python` or `pandoc`: it encodes
+the command line in the ANSI code page, so `--alt "知识结构图"` arrives as mojibake and argparse
+reports `unrecognized arguments`. Set the encoding once per session, before the first call that
+carries a Chinese or accented argument — or run the steps under PowerShell 7, which is UTF-8 by
+default:
+
+```powershell
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+```
+
+The same code page is why the bundled scripts switch a *redirected* stdout to UTF-8: printing a path
+like `…\大物\week2\deck.html` to a pipe otherwise raises `UnicodeEncodeError` and kills a run that had
+already finished. File contents are unaffected — every script here reads and writes UTF-8.
 
 ## Step 1 — Triage every page
 
@@ -57,6 +96,23 @@ script emits the ledger and the page renders, and flags the **trap families** �
 garbled, rasterized, duplicated, or simply wrong. Read
 [`references/traps.md`](references/traps.md) before writing any recovery logic; it holds each trap's
 signature, its recovery, and a worked example.
+
+For an HTML input run `scripts/triage-html.py`, which writes the same ledger plus `<name>.slides.md`:
+that dump is the deck's text layer, one block per unit, and it is what steps 2–5 read. It carries
+three channels that must not be confused with each other:
+
+- **the unit text** — what a reader of the deck sees, and the only thing a knowledge point may cite;
+- **hidden text** — in the file, not on the screen (`hidden`, `display:none`, `class="hidden"`,
+  `<template>`). It is often the answer key or a control panel the deck reveals later, so it is
+  content: mark it `needs-human`, never drop it silently;
+- **speaker notes** — the presenter's private channel. Mine it (it often holds the answers) and never
+  cite it as slide text.
+
+Two HTML signatures need care because they look like nothing. A **hand-built formula** — spans with
+`class="frac"`, `vec`, `sqrt` — flattens in the text layer into its numerator glued to its
+denominator; the dump prints the block's markup instead, and the note cites
+`(s12, rebuilt from markup)`. A **content SVG** with no text around it is a diagram the text layer
+cannot carry, and gets `needs-vision`.
 
 Give every page exactly one verdict:
 
@@ -68,6 +124,20 @@ Give every page exactly one verdict:
 
 A page whose content is a chart, a screenshot, or an equation is never `readable` just because the
 text layer is non-empty.
+
+The HTML traps map onto the same three verdicts, so the ledger reads the same way in both formats:
+
+| HTML trap | Verdict | Recovery |
+|---|---|---|
+| `hidden-content`, `hidden-slide` | `needs-human` | decide whether the hidden material is part of the lecture, then carry it |
+| `frame-shell` | `needs-human` | triage the framed file; this ledger does not cover it |
+| `js-rendered` | `needs-vision` | render in a browser, or ask for the built deck |
+| `image-only`, `math-image`, `svg-only` | `needs-vision` | read the render, cite `(s12, rebuilt from image)` |
+| `thin-text`, `empty-text` | `needs-vision` | a picture-led deck: read the render |
+| `image-alt` | `readable` | the picture's content is in its `alt`; cite `(s12, from alt text)` |
+| `formula-markup` | `readable` | rebuild from the markup block in the dump, never from the flattened line |
+| `math-source` | `readable` | the LaTeX sits in the markup; use it verbatim |
+| `fragments`, `speaker-notes`, `duplicate` | `readable` | content that arrives on a click, in the notes, or twice — keep it, then cut by the rules in step 2 |
 
 Done when **every page of every input has exactly one verdict**, the row count equals the sum of the
 input page counts, and every `needs-vision` / `needs-human` page names its trap and its recovery.
@@ -108,7 +178,9 @@ For each `keep` page, carry its content into the module that owns it. Three rule
   page reaches the notes. Reorder, group, and retitle freely; delete nothing. A concept page that reads
   as prose stays as prose.
 - **Formulas are rebuilt, not copied.** A formula from a `needs-vision` page is re-derived from the
-  rendered image and written as LaTeX; the text layer is only a pointer to where the formula sits.
+  rendered image and written as LaTeX; the text layer is only a pointer to where the formula sits. On
+  an HTML page, the recovery is usually better than a picture: the dump's markup block gives the
+  fraction, vector or root exactly, and the citation says so — `(s12, rebuilt from markup)`.
 - **Corrections are flagged, never silent.** When a page contradicts itself or the field's convention,
   write the corrected value and a one-line note with the page number. The lecture's error is itself
   exam-relevant.
@@ -218,8 +290,13 @@ Layout rules — each changes the output, so none is decoration:
 - **Bold two things only**: the term being defined, and the exam-critical number. Never a whole
   sentence.
 - **Every knowledge point and every question ends with its source page** — `(p42)`, or
-  `(p42, rebuilt from image)` when the value came from the render rather than the text layer.
+  `(p42, rebuilt from image)` when the value came from the render rather than the text layer. For an
+  HTML input the citation is the ledger's unit number instead: `(s03)`, `(s03, from alt text)`,
+  `(s03, rebuilt from markup)`.
 - Formulas are inline LaTeX — `$O(\log n)$`, `$T(n) = an + b$`.
+- **No space inside a `$...$` span.** `$E = $ 5850` is not math to pandoc and prints its dollars
+  literally, so the formula reaches the reader as source while looking fine in the Markdown. Write
+  `$E = 5850$ N/C`. Display math (`$$...$$`) and a space *before* an opening `$` are both fine.
 - Questions render as a marked line plus an indented quote for the answer. The answer is a **nested**
   blockquote — `> >` with the space, and a blank `>` line between them — otherwise the `>` prints as
   literal text:
@@ -268,9 +345,11 @@ invocation so `--print-to-pdf` silently writes nothing (hence `--user-data-dir`)
 containing spaces or parentheses does not resolve (hence the temp directory), and a relative image
 path breaks when the notes are built from somewhere other than their own folder.
 
-**Print in a retry loop, not once.** Chromium loses a race with fresh profile creation and writes
-nothing at all — on a 14-page note, three of four attempts failed that way. Loop up to four times
-with a **new profile directory each pass**, and only then suspect anything else:
+**Print in a retry loop, not once, and wait for the file rather than sleeping a fixed time.**
+Chromium loses a race with fresh profile creation and writes nothing at all — on a 14-page note,
+three of four attempts failed that way — and its launcher can also return before the PDF is flushed,
+so a single `Test-Path` three seconds later reports failure on a print that is merely slow. Poll, and
+require a non-empty file:
 
 ```powershell
 for ($i = 1; $i -le 4; $i++) {
@@ -278,10 +357,18 @@ for ($i = 1; $i -le 4; $i++) {
   & "<edge-or-chrome>" --headless=new --disable-gpu --no-first-run `
     --user-data-dir="$tmp\p$i" --no-pdf-header-footer `
     --print-to-pdf="$tmp\notes.pdf" "file:///<tmp>/notes.html" 2>$null
-  Start-Sleep -Seconds 3
-  if (Test-Path "$tmp\notes.pdf") { break }
+  for ($t = 0; $t -lt 30; $t++) {                 # the print is slow, not absent
+    if ((Test-Path "$tmp\notes.pdf") -and (Get-Item "$tmp\notes.pdf").Length -gt 0) { break }
+    Start-Sleep -Seconds 1
+  }
+  if ((Test-Path "$tmp\notes.pdf") -and (Get-Item "$tmp\notes.pdf").Length -gt 0) { break }
 }
 ```
+
+Copy the notes and the map into the temp folder **under their own names**: the notes reference the
+map by file name, so renaming the copy leaves the reference pointing at nothing and pandoc embeds no
+image. A lecture called `Lecture (2024)` is fine — the map script percent-encodes spaces and
+parentheses in the reference it inserts, which is what keeps the link resolvable.
 
 The step is not done until the PDF exists and is non-empty; a zero exit code proves neither.
 
@@ -313,8 +400,11 @@ Present the PDF, then report in the reply itself — not only inside a file — 
    veto any of them. A veto puts the page back into the notes as content.
 
 Then reconcile out loud: `total = readable + needs-vision + needs-human`, `total = keep + drop`, and
-state that every `keep` page has a landing place in the notes. Any assumption you made — a merge
-decision, a corrected value, a page you could not judge — belongs in this report.
+state that every `keep` page has a landing place in the notes. For an HTML input, also state the page
+model the ledger used (`marked-slides` / `sections` / `heading-h2` / `single-document`), the unit
+count, and any file it frames that you triaged as well — the ledger's rows only cover the files you
+actually read. Any assumption you made — a merge decision, a corrected value, a page you could not
+judge — belongs in this report.
 
 Done when both tails are listed, both equations balance against the input page totals, and the PDF has
 been presented.

@@ -158,6 +158,19 @@ def wrap(text, size, max_width):
     return merged or [text]
 
 
+def link_target(path):
+    """The map's file name as a markdown link target.
+
+    Spaces, parentheses, `#` and `?` end a link destination early, so a notes file called
+    `Lecture (2024).review.md` produced a reference pandoc could not resolve. Percent-encoding
+    those characters is what makes the link survive both markdown and pandoc's resource fetch;
+    the rest of the name, including CJK, is left readable.
+    """
+    return os.path.basename(path).translate(
+        str.maketrans({" ": "%20", "(": "%28", ")": "%29", "<": "%3C", ">": "%3E",
+                       "#": "%23", "?": "%3F"}))
+
+
 def shorten(text, limit=110):
     """A heading is a label, not a sentence: drop markdown emphasis and keep one clause."""
     text = re.sub(r"\*{1,3}(.+?)\*{1,3}", r"\1", text)
@@ -186,13 +199,27 @@ def plain_math(text):
     if "$" not in text and "\\" not in text:
         return text
     text = re.sub(r"\$([^$]*)\$", r"\1", text)
+    # Structures first, while their braces are still there: `\\frac{a}{b}` is a over b, and a
+    # vector is its letter with a combining arrow.
+    text = re.sub(r"\\frac\{([^{}]*)\}\{([^{}]*)\}", r"\1/\2", text)
+    text = re.sub(r"\\(?:vec|overrightarrow)\{?([A-Za-z])\}?", "\\1\u20d7", text)
+    text = re.sub(r"\\hat\{?([A-Za-z])\}?", "\\1\u0302", text)
+    text = re.sub(r"\\(?:bar|overline)\{?([A-Za-z])\}?", "\\1\u0304", text)
+    text = re.sub(r"\\(?:text|mathrm|operatorname)\{([^{}]*)\}", r"\1", text)
     for latex, glyph in (("\\pi", "π"), ("\\theta", "θ"), ("\\sigma", "σ"), ("\\Delta", "Δ"),
-                         ("\\times", "×"), ("\\pm", "±"), ("\\sqrt", "√"), ("\\le", "≤"),
-                         ("\\ge", "≥"), ("\\log", "log"), ("\\bar", ""), ("\\", "")):
+                         ("\\delta", "δ"), ("\\mu", "μ"), ("\\rho", "ρ"), ("\\lambda", "λ"),
+                         ("\\epsilon", "ε"), ("\\varepsilon", "ε"), ("\\omega", "ω"),
+                         ("\\Omega", "Ω"), ("\\phi", "φ"), ("\\infty", "∞"), ("\\partial", "∂"),
+                         ("\\times", "×"), ("\\cdot", "·"), ("\\pm", "±"), ("\\mp", "∓"),
+                         ("\\sqrt", "√"), ("\\le", "≤"), ("\\leq", "≤"), ("\\ge", "≥"),
+                         ("\\geq", "≥"), ("\\approx", "≈"), ("\\neq", "≠"), ("\\to", "→"),
+                         ("\\rightarrow", "→"), ("\\sum", "Σ"), ("\\int", "∫"), ("\\log", "log"),
+                         ("\\quad", " "), ("\\,", " "), ("\\;", " "), ("\\!", ""), ("\\left", ""),
+                         ("\\right", ""), ("\\", "")):
         text = text.replace(latex, glyph)
     text = re.sub(r"\^\{?([0-9+-]+)\}?", lambda m: SUPER.get(m.group(1), "^" + m.group(1)), text)
     text = re.sub(r"_\{?([0-9A-Za-z]+)\}?", lambda m: SUB.get(m.group(1), "_" + m.group(1)), text)
-    return text
+    return re.sub(r"\{([^{}]*)\}", r"\1", text)       # whatever braces are left held nothing
 
 
 class Node:
@@ -439,7 +466,20 @@ def build(title, root, accents, scale):
                      + boxes + tail)
 
 
+def utf8_when_redirected():
+    """Windows redirects stdout through the ANSI code page, so printing a CJK path raises
+    UnicodeEncodeError and kills a run that had already finished. A console keeps its own
+    encoding; only a redirected stream is switched to UTF-8."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure") and not stream.isatty():
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (ValueError, OSError):
+                pass
+
+
 def main():
+    utf8_when_redirected()
     ap = argparse.ArgumentParser(description="easy-review knowledge map from notes headings")
     ap.add_argument("notes")
     ap.add_argument("-o", "--out")
@@ -479,7 +519,7 @@ def main():
           + (f", {skipped} non-knowledge section(s) skipped" if skipped else ""))
 
     if args.insert:
-        ref = f"![{args.alt}]({os.path.basename(out)})"
+        ref = f"![{args.alt}]({link_target(out)})"
         lines = open(args.notes, encoding="utf-8").read().split("\n")
         # Refresh, never duplicate: drop this exact reference wherever it already sits.
         lines = [l for l in lines if l.strip() != ref]
