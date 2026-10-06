@@ -2,18 +2,116 @@
 
 **Agent skills that turn a lecture into study notes you can actually trust.**
 
-Drop in a PDF, PPTX, DOCX or Markdown lecture. Get back a structured Markdown of the knowledge
-points, a PDF, the lecture's own self-test questions in place next to the material they test — and an
-honest report of which pages the pipeline could not read and which pages it dropped.
+Drop in a PDF, PPTX, DOCX or Markdown lecture. Get back study notes you can check: the knowledge
+points, a PDF, the lecture's own self-test questions, and an honest report of which pages the
+pipeline could not read and which pages it dropped.
 
-Built for university courseware, where the slides are ugly, the formulas are images, and the text layer
-lies.
+Built for university courseware, where the slides are ugly, the formulas are images, and the text
+layer lies.
 
 ```
 npx github:yejianqin61-cell/easy-college
 ```
 
-> Also available as `npx easy-college` once the package is published to npm.
+---
+
+## Install
+
+Three ways in. Pick the one that matches how much you intend to change.
+
+<details open>
+<summary><strong>npx — into your agent's skills directory</strong></summary>
+
+```bash
+npx github:yejianqin61-cell/easy-college        # from GitHub (works today)
+npx easy-college                                # once published to npm
+```
+
+Copies both skills into `~/.agents/skills`, where agents that read that directory find them.
+Re-run with `--force` to update.
+
+```bash
+npx easy-college --list          # show the skill names
+npx easy-college --force         # reinstall, overwriting what is there
+npx easy-college --dest <dir>    # install somewhere other than ~/.agents/skills
+```
+
+The installer only ever unlinks an existing skill that is a symlink or junction — it will not
+recurse through a link and delete the directory it points at.
+
+</details>
+
+<details>
+<summary><strong>Clone — if you want to edit the skills</strong></summary>
+
+```bash
+git clone https://github.com/yejianqin61-cell/easy-college
+cp -r easy-college/skills/* ~/.agents/skills/     # or symlink them, and edit in place
+```
+
+A skill is a folder. Copy the folder and you have the skill; edit the folder and you have your
+own version. Nothing here updates behind your back.
+
+</details>
+
+<details>
+<summary><strong>Claude Code — as a plugin</strong></summary>
+
+The repo ships a plugin and marketplace manifest, so Claude Code can install and update the
+whole set as a managed bundle:
+
+```
+/plugin marketplace add yejianqin61-cell/easy-college
+/plugin install easy-college
+```
+
+</details>
+
+Then just ask, in whatever words come naturally: *"turn this deck into study notes"*, or
+*"I've already studied this — make revision notes, with all the questions at the end."*
+
+## Requirements
+
+| Need | For |
+|---|---|
+| Node ≥ 18 | the installer |
+| Python 3 + `pymupdf` | PDF text, page renders, triage (installed on first run) |
+| `pandoc` | Markdown → self-contained HTML |
+| Edge or Chrome | HTML → PDF (headless) |
+
+Missing pieces are installed by the skill on first run, and the toolchain is verified by opening a
+file rather than by a successful import.
+
+---
+
+## Two skills, two shapes of the same lecture
+
+The distinction is the point of this repo. Handing a student who already knows the material a note
+built for someone meeting it for the first time is the failure both skills exist to prevent.
+
+| | [`easy-learning`](skills/easy-learning/) | [`easy-review`](skills/easy-review/) |
+|---|---|---|
+| For | first time through the material | revising before the exam |
+| Opens with | the source and its context | a **knowledge map** of the whole lecture |
+| Body | the lecture's prose, carried over whole | every knowledge point as a **numbered item** under its module |
+| Questions | **interleaved**, next to the point they test | **none in the body** |
+| Ends with | the unreadable/dropped page report | a **self-test column**: every question, stem quoted, answer on the next line, cited by page |
+| Also | — | a corrections register: every place the source contradicts itself or its own answer key |
+
+Both read the same courseware, share the same page ledger, and obey the same rule: **every item
+gets a page number**, so any line can be checked against the original.
+
+### Which one runs?
+
+You do not have to decide up front — each skill's description states when it applies, so the
+agent picks. Three cases where you should say it out loud:
+
+- **"I already studied this"** → `easy-review`. Without that signal a request for "notes" reads as
+  a first pass.
+- **"Put all the questions at the end"** → `easy-review`, and your instruction overrides the
+  first-pass default even if you asked for "notes".
+- **"This is my first time with this material"** → `easy-learning`. Questions next to the material
+  they test is a *learning* feature, not a defect.
 
 ---
 
@@ -30,7 +128,7 @@ Both of these decks are real, and both broke naive extraction in different ways:
 | A 76-page CS lecture (data structures) | 76 | 44 readable · 16 needs-vision · 16 needs-human |
 | A 52-page physics lab lecture (error analysis) | 52 | 33 readable · 17 needs-vision · 2 needs-human |
 
-The failure modes `easy-learning` is built around:
+The failure modes both skills are built around:
 
 | Trap | What happens | Seen in |
 |---|---|---|
@@ -42,26 +140,27 @@ The failure modes `easy-learning` is built around:
 | **Master noise** | A footer and a logo repeated on every page. | 76 repeats of the same two tokens |
 | **Errors in the source** | The lecture itself is wrong — a dropped minus sign, an answer key whose numbers do not match its questions. | 5 pages in one deck, 4 mismatched answers in another |
 
-Each trap has a detection signature and a recovery, documented in
-[`skills/easy-learning/references/traps.md`](skills/easy-learning/references/traps.md).
+Each trap has a detection signature and a recovery. The catalogue is shipped inside both skills —
+[`easy-learning/references/traps.md`](skills/easy-learning/references/traps.md) — and the two copies
+are kept byte-identical by a test, so neither skill can drift.
 
 ---
 
 ## Two invariants
 
-Everything the skill does serves these two rules.
+Everything both skills do serves these two rules.
 
 **Every page gets a verdict.** Each page of each input lands in a **ledger** with its verdict
 (`readable` / `needs-vision` / `needs-human`), the trap that fired, whether it was kept or dropped, and
 the reason code for the drop. The ledger reconciles at every step: *rows = the sum of all input page
-counts*. An un-judged page is the failure this skill exists to prevent.
+counts*. An un-judged page is the failure these skills exist to prevent.
 
 **Every item gets a page number.** No knowledge point, formula, table, question or correction enters
 the notes without the source page it came from. You can open the original lecture at the cited page and
-find the same content there. Notes you can check, rather than notes that merely sound right.
+find the same content there. Notes you can check, rather than notes that sound right.
 
 And one rule about not overstepping: **fidelity is the default.** A kept page is carried into the notes
-in full — every sentence, every formula, every table, every question. The skill reorganises; it does not
+in full — every sentence, every formula, every table, every question. The skills reorganise; they do not
 decide what you do not need. Only background material (motivation, analogy, covers, dividers, breaks)
 may be dropped, and every dropped page is listed for your veto.
 
@@ -77,6 +176,8 @@ The notes follow the language you asked in.
 
 ## How it runs
 
+`easy-learning` (a first pass):
+
 | Step | Does |
 |---|---|
 | 0 | Inventories the inputs, confirms an extractor and a renderer for each, installs anything missing, and verifies by actually opening a file |
@@ -88,8 +189,18 @@ The notes follow the language you asked in.
 | 6 | Renders the PDF (pandoc → native MathML → headless Chromium) and checks that the map, formulas and CJK actually rendered |
 | 7 | Reports the two tails — unreadable pages, dropped pages — and reconciles the counts |
 
-Output lands in `./notes/<lecture-name>/`: the notes (`.md` and `.pdf`), the overview map (`.svg`), the
-ledger, and page renders.
+`easy-review` (revision) keeps steps 0–2 and the same ledger, then replaces the back half:
+
+| Step | Does |
+|---|---|
+| 3 | Promotes each knowledge point to a **numbered item** — definition, rule list, comparison table, procedure, formula block, or pitfall — under its module, dropping none of them |
+| 4 | Extracts every exercise with stem, options and answer; unanswered items are the highest-value find; also builds the corrections register |
+| 5 | Writes three parts: **knowledge map → itemised body → self-test column**; no question survives in the body |
+| 6 | Runs `check-review.py` to verify the contract, then renders the PDF and spot-checks the map, the self-test page break, formulas and CJK |
+| 7 | Reports the map and self-test counts, the unreadable pages, the dropped pages, and reconciles the counts |
+
+Output lands in `./notes/<lecture-name>/`: the notes (`.md` and `.pdf`), the knowledge map (`.svg`),
+the ledger, and page renders.
 
 ### The mind map
 
@@ -97,76 +208,110 @@ Every set of notes opens with one picture of the whole lecture, generated from t
 so it cannot drift out of sync with the document:
 
 ```bash
+# first-pass notes: root → modules → knowledge points
 python skills/easy-learning/scripts/mindmap.py notes/my-lecture.notes.md --insert --alt "知识结构图"
+
+# revision notes: the same map, plus each knowledge point's `####` sub-points
+python skills/easy-review/scripts/knowledge-map.py notes/my-lecture.review.md \
+  --root "知识结构图" --insert --before "模块 1"
 ```
 
-A right-branching map (root → modules → knowledge points) emitted as a standalone **SVG**, which is the
-only mind-map format that survives an offline pipeline: Mermaid needs a CDN or a ~300 MB
-`mermaid-cli`, Graphviz and PlantUML need extra binaries, and ASCII art breaks on CJK because Chinese
-glyphs are double-width. Being vector, it stays sharp in print and its text stays selectable.
+A right-branching map emitted as a standalone **SVG**, which is the only mind-map format that survives
+an offline pipeline: Mermaid needs a CDN or a ~300 MB `mermaid-cli`, Graphviz and PlantUML need extra
+binaries, and ASCII art breaks on CJK because Chinese glyphs are double-width. Being vector, it stays
+sharp in print and its text stays selectable — the PDF embeds it as a data URI, so the map in the PDF
+is still vector, not a screenshot.
+
+The map is also where the heading convention pays off twice: `##` is a module, `###` a knowledge point,
+and a `###`'s `####` children hang beside it. Sections that are not knowledge — the self-test column,
+appendices, the errata table — are skipped, so the map shows knowledge structure rather than the
+document's furniture.
+
+### Checking a revision note
+
+The revision contract is mechanical, so `easy-review` verifies it mechanically rather than by reading:
+
+```bash
+python skills/easy-review/scripts/check-review.py notes/my-lecture.review.md
+```
+
+It proves the map sits above the first module, that no question marker survived anywhere in the
+knowledge body, that the self-test column is last, and that its quoted items carry page citations.
+It cannot prove *coverage* — that the body holds everything the lecture taught — because it cannot see
+the lecture; that stays the extracting agent's job, reconciled out loud at the end of the run.
 
 ---
 
-## Install
+## Reference
 
-```bash
-# from GitHub (works today)
-npx github:yejianqin61-cell/easy-college
+A skill is model-invoked unless it says otherwise, so you reach both of these by describing your
+task, not by remembering a command.
 
-# from npm, once published
-npx easy-college
-```
+### Learning
 
-Options:
+- **[easy-learning](./skills/easy-learning/SKILL.md)**: courseware → study notes. A per-page triage
+  ledger, knowledge points with the lecture's own questions in place, a mind map, a PDF, and the
+  honest report of what could not be read. [Full documentation →](docs/easy-learning.md)
+- **[easy-review](./skills/easy-review/SKILL.md)**: courseware → revision notes. A knowledge map on
+  top, every knowledge point as a numbered item under its module, no question in the body, and one
+  self-test column at the end. [Full documentation →](docs/easy-review.md)
 
-```bash
-npx easy-college --list          # show the skill names
-npx easy-college --force         # reinstall, overwriting what is there
-npx easy-college --dest <dir>    # install somewhere other than ~/.agents/skills
-```
-
-The installer only ever unlinks an existing skill that is a symlink or junction — it will not recurse
-through a link and delete the directory it points at.
-
-## Requirements
-
-| Need | For |
-|---|---|
-| Node ≥ 18 | the installer |
-| Python + `pymupdf` | PDF text, rendering and triage (installed on first run) |
-| `pandoc` | Markdown → self-contained HTML |
-| Edge or Chrome | HTML → PDF (headless) |
-
-Missing pieces are installed by the skill on first run, and the toolchain is verified by opening a file
-rather than by a successful import.
+Both are model-invoked. Either can run alone; `easy-review` ships its own copy of the triage script
+and the trap catalogue, so installing one skill never leaves a hole in it.
 
 ---
-
-## Skills in this repo
-
-| Skill | Does |
-|---|---|
-| [`easy-learning`](skills/easy-learning/) | Courseware → notes. The full pipeline above. |
-
-<!-- More skills land here. -->
 
 ## Layout
 
 ```
-skills/easy-learning/
-├── SKILL.md               the 8-step pipeline
-├── references/traps.md    the trap catalogue: signature, recovery, evidence
-├── scripts/triage.py      per-page triage → ledger.json / ledger.md / page renders
-├── scripts/mindmap.py     notes headings → a vector SVG mind map
-└── assets/notes.css       A4, CJK-safe, compact tables
-bin/cli.js                 the npx installer
+skills/
+├── easy-learning/
+│   ├── SKILL.md               the 8-step pipeline
+│   ├── references/traps.md    the trap catalogue: signature, recovery, evidence
+│   ├── scripts/triage.py      per-page triage → ledger.json / ledger.md / page renders
+│   ├── scripts/mindmap.py     notes headings → a vector SVG mind map
+│   └── assets/notes.css       A4, CJK-safe, compact tables
+└── easy-review/
+    ├── SKILL.md               the 8-step revision pipeline
+    ├── references/traps.md    the same catalogue, byte-identical (a test enforces it)
+    ├── scripts/triage.py      the same triage script, so this skill stands alone
+    ├── scripts/knowledge-map.py   note headings → SVG, sub-points included
+    ├── scripts/check-review.py    proves the revision contract holds
+    └── assets/review.css      the above, plus a page break before the self-test column
+docs/                          one page of prose per skill
+bin/cli.js                     the npx installer
 ```
+
+A skill folder is the unit of installation, so nothing inside one reaches into a sibling's files.
 
 ## Testing
 
 `scripts/triage.py` was developed against two real lecture decks with deliberately different failure
 modes, and re-run on both after every change — the vector-typeset deck must keep reporting 44/16/16
-while the full-bleed deck reports 33/17/2. Third-party courseware is not redistributed here.
+while the full-bleed deck reports 33/17/2. Third-party courseware is not redistributed here; the
+example decks stay out of the repo, and the fixtures are generated from them at test time.
+
+The revision pipeline is exercised the same way: a 3-module, 27-knowledge-point note over the
+52-page physics deck must produce a map that fits one page with no clipped node, a
+`check-review.py` run with no violation, and an 8-page A4 PDF whose map is still vector and whose
+self-test column starts on its own page. `check-review.py` is then turned on eight deliberately
+broken notes — map missing, map after the first module, a question left in the body, a "try the
+following" prompt left in the body, no self-test column, a module after the column, an uncited
+column — and must fail every one of them. A checker that only passes good input proves nothing.
+
+A third test asserts that the two copies of `references/traps.md` are byte-identical, so the skills
+cannot silently disagree about what a trap looks like.
+
+## Contributing
+
+One folder per skill under `skills/`, with `SKILL.md` at its root. Keep a skill self-contained: if
+two skills need the same file, copy it and add it to the byte-identity check in
+[`scripts/test-repo.mjs`](scripts/test-repo.mjs), the way the trap catalogue is. The conventions for
+working in this repo are in [`AGENTS.md`](AGENTS.md).
+
+```bash
+npm test        # repo-level checks: frontmatter, self-containment, shared-file parity
+```
 
 ## License
 

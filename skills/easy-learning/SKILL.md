@@ -1,25 +1,6 @@
 ---
 name: easy-learning
-description: >
-  Turn uploaded courseware into study notes: a per-page triage ledger, a Markdown of knowledge
-  points interleaved with the lecture's own self-test questions, a PDF, and an honest report of the
-  pages that were unreadable and the pages that were dropped as background.
-
-  Use when the user uploads 课件/讲义/PPT/slides/PDF and wants notes out of them: 整理成笔记, 提炼知识点,
-  提取课件试题, 课件转笔记, 讲义总结, 划重点, 期末复习资料, 考前突击, "make notes from these slides",
-  "extract the key points", "pull the quiz questions", "turn this lecture into notes".
-  Also when another skill needs a lecture mined for knowledge points or self-test items.
-
-  Don't use for a raw text dump with no structure, for a single-page file, or when the user only wants
-  one question answered about a file's contents.
-license: MIT
-compatibility: Python (pymupdf, installed on first run) for PDF triage; pandoc plus Edge/Chrome for PDF output.
-metadata:
-  author: easy-learning contributors
-  version: 0.2.0
-  category: document-creation
-  pattern: pipeline
-  tags: [courseware, notes, pdf, pptx, docx, knowledge-extraction, quiz, study, provenance]
+description: "Turn uploaded courseware into study notes: a per-page triage ledger, a Markdown of knowledge points interleaved with the lecture's own self-test questions, a PDF, and an honest report of the pages that were unreadable and the pages that were dropped as background. Use when the user uploads 课件/讲义/PPT/slides/PDF and wants notes out of them: 整理成笔记, 提炼知识点, 提取课件试题, 课件转笔记, 讲义总结, 划重点, 期末复习资料, 考前突击, \"make notes from these slides\", \"extract the key points\", \"pull the quiz questions\", \"turn this lecture into notes\". Also when another skill needs a lecture mined for knowledge points or self-test items. Don't use for a raw text dump with no structure, for a single-page file, or when the user only wants one question answered about a file's contents."
 ---
 
 # easy-learning

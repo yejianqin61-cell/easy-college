@@ -1,0 +1,25 @@
+{
+  "name": "easy-college",
+  "version": "0.3.0",
+  "description": "Agent skills that turn university courseware into study notes and revision notes: a per-page triage ledger, a vector knowledge map, every item cited to its page, and the lecture's own questions either in place or in a self-test column at the end.",
+  "author": {
+    "name": "Ye Jianqin",
+    "url": "https://github.com/yejianqin61-cell"
+  },
+  "homepage": "https://github.com/yejianqin61-cell/easy-college",
+  "repository": "https://github.com/yejianqin61-cell/easy-college",
+  "license": "MIT",
+  "keywords": [
+    "courseware",
+    "study-notes",
+    "revision-notes",
+    "exam-prep",
+    "knowledge-map",
+    "self-test",
+    "education"
+  ],
+  "skills": [
+    "./skills/easy-learning",
+    "./skills/easy-review"
+  ]
+}

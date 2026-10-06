@@ -1,11 +1,15 @@
 # Scratch and generated output
 work/
 notes/
-docs/
 
 # Third-party courseware used for testing. Not redistributable — keep it out of
 # the repo and out of the npm package.
 example/
+
+# Scratch analysis that is not part of the shipped repo. `docs/` itself is NOT ignored:
+# it holds the per-skill documentation the README links to.
+docs/CST204-*.md
+*.scratch.md
 
 node_modules/
 __pycache__/

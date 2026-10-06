@@ -1,10 +1,9 @@
 # easy-college
 
-**把一份课件变成你能信得过的学习笔记。**
+**把一份课件变成你能信得过的笔记。**
 
-丢进一份 PDF、PPTX、DOCX 或 Markdown 课件，拿回：按模块整理的 Markdown 知识点笔记、一份 PDF、
-课件自带的随堂题（就放在它考的那个知识点旁边），以及一份诚实的报告——哪些页面读不出来、哪些页面
-被当成背景剔除了。
+丢进一份 PDF、PPTX、DOCX 或 Markdown 课件，拿回可以逐条核对的笔记：知识点、一份 PDF、课件自带的
+题目，以及一份诚实的报告——哪些页面读不出来、哪些页面被当成背景剔除了。
 
 为大学课件而做：幻灯片做得糙、公式是图片、文本层会骗人。
 
@@ -12,7 +11,97 @@
 npx github:yejianqin61-cell/easy-college
 ```
 
-> 发布到 npm 之后也可用 `npx easy-college`。
+---
+
+## 安装
+
+三条路，按你打算改多少来选。
+
+<details open>
+<summary><strong>npx —— 装进 agent 的技能目录</strong></summary>
+
+```bash
+npx github:yejianqin61-cell/easy-college        # 从 GitHub 直接跑（现在就能用）
+npx easy-college                                # 发布到 npm 之后
+```
+
+两个技能会被复制到 `~/.agents/skills`，读取该目录的 agent 就能发现它们。更新时加 `--force`。
+
+```bash
+npx easy-college --list          # 列出技能名
+npx easy-college --force         # 覆盖重装
+npx easy-college --dest <dir>    # 装到别处（默认 ~/.agents/skills）
+```
+
+安装器遇到已存在的符号链接／目录联接时只会**删除链接本身**，不会递归进去把链接指向的目录删掉。
+
+</details>
+
+<details>
+<summary><strong>clone —— 如果你想改技能本身</strong></summary>
+
+```bash
+git clone https://github.com/yejianqin61-cell/easy-college
+cp -r easy-college/skills/* ~/.agents/skills/     # 或者做软链接，原地修改
+```
+
+一个技能就是一个文件夹。复制文件夹就等于装上它，改文件夹就等于改出你自己的版本。没有任何东西会在
+背后自动更新。
+
+</details>
+
+<details>
+<summary><strong>Claude Code —— 作为插件</strong></summary>
+
+仓库自带插件与市场清单，Claude Code 可以把整套作为受管捆绑安装并自动更新：
+
+```
+/plugin marketplace add yejianqin61-cell/easy-college
+/plugin install easy-college
+```
+
+</details>
+
+然后直接用大白话说需求：*"把这份课件整理成笔记"*，或者 *"我已经学过一遍了，出复习笔记，题目全部
+放到最后。"*
+
+## 环境要求
+
+| 需要 | 用途 |
+|---|---|
+| Node ≥ 18 | 安装器 |
+| Python 3 + `pymupdf` | PDF 取文、页面渲染、分诊（首次运行自动安装） |
+| `pandoc` | Markdown → 自包含 HTML |
+| Edge 或 Chrome | HTML → PDF（无头） |
+
+缺的组件由技能在首次运行时装好；工具链的验证方式是"打开一个文件"，而不是"import 成功"。
+
+---
+
+## 两个技能，同一份课件的两种形态
+
+这个区别就是本仓库存在的理由。把一个"为第一次接触而做"的笔记，交给一个早就学过、只想复习的人——这
+正是两个技能都要防的失败。
+
+| | [`easy-learning`](skills/easy-learning/) | [`easy-review`](skills/easy-review/) |
+|---|---|---|
+| 用于 | 第一遍学新内容 | 考前复习 |
+| 开头 | 来源与背景 | 整讲**知识结构图** |
+| 正文 | 课件原文整段搬运 | 每个知识点一条**编号条目**，挂在所属模块下 |
+| 题目 | **穿插**在它考的知识点旁边 | 正文里**一道都没有** |
+| 结尾 | 读不出来的页面／被剔除的页面报告 | **自测专栏**：每道题题干引文、答案紧随一行、带页码 |
+| 另外 | — | 勘误表：课件自相矛盾、或与自己的答案页对不上的地方 |
+
+两者读同一份课件，共用同一份页面台账，遵守同一条规则：**每一条都有页码**，所以任何一行都能翻回原页
+核对。
+
+### 该用哪一个？
+
+不用事先决定——每个技能在描述里写清了什么时候适用，agent 会自己选。只有三种情况需要你明说：
+
+- **"我已经学过一遍了"** → `easy-review`。否则"帮我做笔记"会被读成第一遍学习。
+- **"题目全部放到最后"** → `easy-review`。这条指令本身就压过第一遍的默认形态。
+- **"这是我第一次学这个"** → `easy-learning`。题目紧跟考点是**学习**功能，不是缺陷。
 
 ---
 
@@ -28,7 +117,7 @@ npx github:yejianqin61-cell/easy-college
 | 76 页计算机专业课（数据结构） | 76 | readable 44 · needs-vision 16 · needs-human 16 |
 | 52 页物理实验课（误差分析） | 52 | readable 33 · needs-vision 17 · needs-human 2 |
 
-`easy-learning` 围绕这些失败模式构建：
+两个技能共同围绕这些失败模式构建：
 
 | 陷阱 | 发生了什么 | 实例 |
 |---|---|---|
@@ -40,18 +129,19 @@ npx github:yejianqin61-cell/easy-college
 | **母版噪声** | 页脚和校徽在每一页重复 | 同样两个词重复 76 次 |
 | **原稿本身有错** | 课件自己就写错了——丢负号、答案页的数字和题面对不上 | 一份课件 5 页；另一份 4 组答案对不上题面 |
 
-每个陷阱都有检测特征和恢复办法，见
-[`skills/easy-learning/references/traps.md`](skills/easy-learning/references/traps.md)。
+每个陷阱都有检测特征和恢复办法。这份手册在两个技能里各带一份——
+[`easy-learning/references/traps.md`](skills/easy-learning/references/traps.md)——并由一个测试保证两份
+文件逐字节相同，所以两个技能不可能对"什么算陷阱"产生分歧。
 
 ---
 
 ## 两条不变式
 
-技能做的所有事，都是为这两条规则服务。
+两个技能做的所有事，都是为这两条规则服务。
 
 **每一页都有判定。** 每份输入的每一页都会落进**台账（ledger）**：判定
 （`readable` / `needs-vision` / `needs-human`）、命中的陷阱、保留还是剔除、以及剔除的理由码。
-台账在每一步都自我配平：*行数 = 各输入页数之和*。漏页，正是这个技能存在的意义。
+台账在每一步都自我配平：*行数 = 各输入页数之和*。漏页，正是这些技能存在的意义。
 
 **每一条都有页码。** 任何知识点、公式、表格、题目、勘误，进入笔记时都必须带上它来自的页码。
 你可以翻到原课件那一页，找到同样的内容。这是"可核查的笔记"，而不是"听起来对的笔记"。
@@ -71,6 +161,8 @@ npx github:yejianqin61-cell/easy-college
 
 ## 运行流程
 
+`easy-learning`（第一遍学）：
+
 | 步骤 | 做什么 |
 |---|---|
 | 0 | 清点输入，为每种格式确认提取器与渲染器，缺什么装什么，并**真的打开一个文件**来验证 |
@@ -82,6 +174,16 @@ npx github:yejianqin61-cell/easy-college
 | 6 | 出 PDF（pandoc → 原生 MathML → 无头 Chromium），并检查导图、公式和中文是否真的渲染出来了 |
 | 7 | 报台账的两个尾巴——看不清的页面、被剔除的页面——并当场配平页数 |
 
+`easy-review`（复习）沿用 0–2 步与同一份台账，换掉后半程：
+
+| 步骤 | 做什么 |
+|---|---|
+| 3 | 把知识点**逐条提升为条目**（定义／规则清单／对照表／流程／公式块／易错点），模块化编号，一条不落 |
+| 4 | 抽出课件全部习题，含题干、选项、答案；**没给答案的题最值钱**；同时建一份勘误表 |
+| 5 | 成稿三部分：**知识结构图 → 条目化正文 → 文末自测专栏**；正文里不留任何题目 |
+| 6 | 先跑 `check-review.py` 验契约，再出 PDF，并翻页检查导图、自测专栏分页、公式与中文 |
+| 7 | 报导图与自测统计、看不清的页面、被剔除的页面，并当场配平页数 |
+
 产物落在 `./notes/<课件名>/`：笔记（`.md` 与 `.pdf`）、知识结构导图（`.svg`）、台账、页面渲染图。
 
 ### 思维导图
@@ -89,73 +191,98 @@ npx github:yejianqin61-cell/easy-college
 每份笔记开头都有一张"整讲全貌"图，**由笔记自己的标题生成**——所以它永远不会和正文脱节：
 
 ```bash
+# 首次学习笔记：根 → 模块 → 知识点
 python skills/easy-learning/scripts/mindmap.py notes/my-lecture.notes.md --insert --alt "知识结构图"
+
+# 复习笔记：同一张图，再加上每个知识点的 `####` 子条目
+python skills/easy-review/scripts/knowledge-map.py notes/my-lecture.review.md \
+  --root "知识结构图" --insert --before "模块 1"
 ```
 
-向右分支的导图（根 → 模块 → 知识点），输出为独立的 **SVG**。这是唯一能活着走完这条离线流水线的导图
-格式：Mermaid 需要 CDN 或约 300MB 的 `mermaid-cli`，Graphviz / PlantUML 需要额外二进制，而 ASCII 字符画
-遇到中文就会错位（汉字是双宽）。SVG 是矢量的，打印锐利，文字可选可搜。
+向右分支的导图，输出为独立的 **SVG**。这是唯一能活着走完这条离线流水线的导图格式：Mermaid 需要
+CDN 或约 300MB 的 `mermaid-cli`，Graphviz / PlantUML 需要额外二进制，而 ASCII 字符画遇到中文就会错位
+（汉字是双宽）。SVG 是矢量的，打印锐利、文字可选可搜；PDF 里它是以 data URI 内嵌的，所以纸上的导图
+**仍然是矢量**，不是截图。
+
+标题约定在这里回报第二次：`##` 是模块，`###` 是知识点，`###` 下的 `####` 挂在它旁边。不是知识的
+章节——自测专栏、附录、勘误表——会被跳过，所以导图展示的是知识结构，不是文档的家具。
+
+### 检查复习笔记
+
+复习形态的契约是机械的，所以 `easy-review` 用程序检查，而不是靠人眼看：
+
+```bash
+python skills/easy-review/scripts/check-review.py notes/my-lecture.review.md
+```
+
+它会证明四件事：导图在第一个模块之前、正文里没有残留任何题目、自测专栏在最后、专栏里被引用的
+条目都带页码。它**不能**证明"覆盖全"——它看不到课件——那是提取环节的责任，在最后口头配平。
 
 ---
 
-## 安装
+## 技能清单
 
-```bash
-# 从 GitHub 直接跑（现在就能用）
-npx github:yejianqin61-cell/easy-college
+技能默认是"模型自行调用"的，所以你是通过描述任务来触达它们，不需要记命令。
 
-# 发布到 npm 之后
-npx easy-college
-```
+### 学习
 
-参数：
+- **[easy-learning](./skills/easy-learning/SKILL.md)**：课件 → 学习笔记。逐页台账、知识点与课件自带
+  题目同行、思维导图、PDF，以及一份"哪里没读出来"的诚实报告。[完整文档 →](docs/easy-learning.md)
+- **[easy-review](./skills/easy-review/SKILL.md)**：课件 → 复习笔记。导图置顶、知识点全部提升为编号
+  条目、正文无题、文末一个自测专栏。[完整文档 →](docs/easy-review.md)
 
-```bash
-npx easy-college --list          # 列出技能名
-npx easy-college --force         # 覆盖重装
-npx easy-college --dest <dir>    # 装到别处（默认 ~/.agents/skills）
-```
-
-安装器遇到已存在的符号链接/目录联接（junction）时只会**删除链接本身**，不会递归进去把链接指向的
-目录删掉。
-
-## 环境要求
-
-| 需要 | 用途 |
-|---|---|
-| Node ≥ 18 | 安装器 |
-| Python + `pymupdf` | PDF 取文、渲染、分诊（首次运行自动安装） |
-| `pandoc` | Markdown → 自包含 HTML |
-| Edge 或 Chrome | HTML → PDF（无头） |
-
-缺的组件由技能在首次运行时装好；工具链的验证方式是"打开一个文件"，而不是"import 成功"。
+两者都是模型自行调用。任一都能单独运行：`easy-review` 自带同一份分诊脚本和陷阱手册，所以只装一个
+技能也不会缺胳膊少腿。
 
 ---
-
-## 本仓库的技能
-
-| 技能 | 作用 |
-|---|---|
-| [`easy-learning`](skills/easy-learning/) | 课件 → 笔记。即上面整套流程。 |
-
-<!-- 后续技能加在这里。 -->
 
 ## 目录结构
 
 ```
-skills/easy-learning/
-├── SKILL.md               八步流程
-├── references/traps.md    陷阱手册：特征、恢复、实证
-├── scripts/triage.py      逐页分诊 → ledger.json / ledger.md / 页面渲染图
-├── scripts/mindmap.py     笔记标题 → 矢量 SVG 思维导图
-└── assets/notes.css       A4、中文字体安全、紧凑表格
-bin/cli.js                 npx 安装器
+skills/
+├── easy-learning/
+│   ├── SKILL.md               八步流程
+│   ├── references/traps.md    陷阱手册：特征、恢复、实证
+│   ├── scripts/triage.py      逐页分诊 → ledger.json / ledger.md / 页面渲染图
+│   ├── scripts/mindmap.py     笔记标题 → 矢量 SVG 思维导图
+│   └── assets/notes.css       A4、中文字体安全、紧凑表格
+└── easy-review/
+    ├── SKILL.md               八步复习流程
+    ├── references/traps.md    同一份手册，逐字节相同（有测试保证）
+    ├── scripts/triage.py      同一份分诊脚本，所以这个技能能独立运行
+    ├── scripts/knowledge-map.py  笔记标题 → SVG，含子条目
+    ├── scripts/check-review.py   证明复习契约成立
+    └── assets/review.css      同上，外加自测专栏前的分页
+docs/                          每个技能一页说明
+bin/cli.js                     npx 安装器
 ```
+
+技能文件夹是安装的最小单位，所以任何一个技能内部的引用都不会伸到兄弟技能的目录里。
 
 ## 测试
 
 `scripts/triage.py` 是在两份失败模式刻意不同的真实课件上开发出来的，每次改动都会在两份上回归——
-向量排版的课件必须稳定报 44/16/16，满版位图的课件必须报 33/17/2。第三方课件不在本仓库分发。
+向量排版的课件必须稳定报 44/16/16，满版位图的课件必须报 33/17/2。第三方课件不在本仓库分发：示例
+课件留在仓库之外，测试时从它现生成样例。
+
+复习流水线用同样方式验证：同一份 52 页物理课件产出的 3 模块、27 知识点复习笔记，必须得到一张不裁切
+任何节点、能放进一页的导图，`check-review.py` 零违规，以及一份 8 页 A4 PDF——导图仍是矢量、自测专栏
+另起一页。随后把 `check-review.py` 对准 8 份故意做坏的笔记——缺导图、导图排在第一个模块之后、正文里
+残留题目、正文里残留"try the following"、没有自测专栏、专栏之后还有模块、专栏内没有页码——必须全部
+判为违规。一个只会给好文件放行的检查器，什么也证明不了。
+
+第三个测试断言两份 `references/traps.md` 逐字节相同，所以两个技能不可能悄悄地对"什么算陷阱"产生
+分歧。
+
+```bash
+npm test        # 仓库级检查：frontmatter、技能自包含、共享文件一致性
+```
+
+## 参与贡献
+
+`skills/` 下一个技能一个文件夹，根目录放 `SKILL.md`。**保持技能自包含**：两个技能需要同一个文件时，
+就复制一份，并按陷阱手册的做法登记到 [`scripts/test-repo.mjs`](scripts/test-repo.mjs) 的一致性检查里。
+本仓库的详细约定见 [`AGENTS.md`](AGENTS.md)。
 
 ## 许可
 

@@ -1,0 +1,110 @@
+# easy-review
+
+**Courseware in, revision notes out — a knowledge map on top, knowledge as items, and every
+question in one self-test column at the end.**
+
+`easy-review` reads the same lecture as [`easy-learning`](./easy-learning.md) and produces a
+different document on purpose. A revision note is not a shorter first-pass note; it is a different
+shape, built for a reader who already knows the material and needs to relocate, re-check and test
+what they know.
+
+| | |
+|---|---|
+| Skill file | [`skills/easy-review/SKILL.md`](../skills/easy-review/SKILL.md) |
+| Invocation | model-invoked — describe the task, or say you are revising |
+| Input | the same courseware `easy-learning` reads: `.pdf`, `.pptx`, `.docx`, `.md`, `.txt` |
+| Output | `./notes/<lecture>/`: `<name>.review.md`, `<name>.review.mindmap.svg`, `<name>.review.pdf` |
+| Needs | Python 3 + `pymupdf`; `pandoc`; Edge or Chrome for the PDF |
+
+## Four rules make it a revision note
+
+**1. It opens with the map.** The first thing after the title is one picture of the whole lecture. A
+revision reader arrives knowing the material is familiar and needing to know where they are in it.
+
+**2. Knowledge is extracted completely, as items.** The body is a complete itemised sweep: every
+knowledge point of every kept page, one item per point, numbered, under the module that owns it. Each
+point is *decided* — a definition, a list of rules, a comparison table, a procedure, a formula block,
+a pitfall — and written as something you can check off. Rewriting prose into items is the job;
+dropping a point is not.
+
+**3. No question appears in the body.** Every exercise the lecture contains moves to the end. A
+revision reader who meets a question mid-body either answers it and derails, or skips it and trains
+themselves to skip. Neither is revision.
+
+**4. The self-test column is last and is everything.** One section, at the very end, holding every
+question the lecture asks, each with its stem quoted and its answer on the next line, each cited to
+its page. It is the revision aid *and* the coverage proof: the questions are the lecture's own
+statement of what matters.
+
+## When it runs
+
+Reach for it whenever the material is already familiar:
+
+- *"I've already studied this, make revision notes."*
+- *"复习资料"* / *"考前复习"* / *"二轮复习"* / *"考点整理"* / *"知识梳理"*
+- *"Put all the questions at the end."* — this instruction alone selects this skill.
+- *"Consolidate this lecture for the exam."*
+- *"Make a knowledge map of this deck."*
+
+## The output, part by part
+
+```
+# <lecture> — 复习笔记
+> source line
+![知识结构图](<name>.review.mindmap.svg)      ← 1. the map
+## 模块 1｜…                                  ← 2. the body
+### 1.1 …
+## 复习自检｜原稿疑点与易错点                    ←    the corrections register
+## 自测专栏 {#selftest}                         ← 3. every question
+```
+
+The self-test column carries an explicit `{#selftest}` anchor because the stylesheet turns
+`h2#selftest` into a page break — so the column always begins on a fresh page. Pandoc derives a
+heading's id from its text, and a text-derived id would break the moment the language changed.
+
+Inside the column, each question's stem is a blockquote and its answer is a **separate** blockquote
+right after, not one nested inside the other: at the back of a document, the answer has to be
+coverable with one thumb, and a nested quote cannot be covered without hiding the question.
+
+## The knowledge map
+
+```bash
+python skills/easy-review/scripts/knowledge-map.py notes/my-lecture.review.md \
+  --root "知识结构图" --insert --before "模块 1"
+```
+
+`#` is the root, `##` a module, `###` a knowledge point, and a `###`'s `####` sub-points hang beside
+it — numbered rules, cases or modes, not new leaves. Sections that are not knowledge (the self-test
+column, appendices, the errata table) are skipped. `--insert` refreshes the reference rather than
+adding a second one, so the map can be regenerated after any heading change.
+
+Pass `--root` when the document title is long: the map's root is a label, and a full thesis title
+becomes a column of six short lines.
+
+## The contract checker
+
+```bash
+python skills/easy-review/scripts/check-review.py notes/my-lecture.review.md
+```
+
+Exit code 0 means the document obeys its own rules:
+
+- the map sits above the first knowledge module;
+- no question marker or practice prompt survives anywhere in the knowledge body;
+- the self-test column exists and is last — no module comes after it;
+- the column is not empty, and its question groups carry page citations.
+
+Exit code 1 lists the violations. It is deliberately mechanical, and deliberately narrow: it cannot
+prove *coverage* — that the body really holds everything the lecture taught — because it cannot see
+the lecture. That stays the extracting agent's job, reconciled out loud at the end of the run.
+
+## Using it well
+
+- **Say that you are revising.** A bare request for "notes" reads as a first pass. "I already
+  studied this" or "复习" is the signal that selects this skill.
+- **Pair it with `easy-learning` if you want both.** Studied from the first-pass notes, revise from
+  these; they share the same ledger and the same citation discipline.
+- **Check the corrections register first.** It collects every place the lecture contradicts itself or
+  its own answer key. Revising from a wrong answer key is worse than not revising.
+- **Trust the self-test column as coverage evidence.** If a question the lecture asks is missing from
+  it, the extraction missed that page, and the final report will say why.

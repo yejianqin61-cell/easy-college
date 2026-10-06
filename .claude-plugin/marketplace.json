@@ -1,0 +1,23 @@
+{
+  "name": "easy-college",
+  "owner": {
+    "name": "Ye Jianqin",
+    "url": "https://github.com/yejianqin61-cell"
+  },
+  "description": "Courseware-to-notes skills for students: first-pass study notes, and revision notes with a knowledge map and a self-test column.",
+  "plugins": [
+    {
+      "name": "easy-college",
+      "source": "./",
+      "description": "Turn a lecture PDF, PPTX or DOCX into notes you can trust: every page judged, every item cited to its source page, the lecture's own questions preserved.",
+      "category": "education",
+      "keywords": [
+        "courseware",
+        "study-notes",
+        "revision-notes",
+        "knowledge-map",
+        "self-test"
+      ]
+    }
+  ]
+}

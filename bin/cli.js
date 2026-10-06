@@ -37,7 +37,9 @@ Options
   -h, --help         show this message
 
 After installing, ask your agent to turn a lecture into notes — for example
-"turn this PDF into study notes" — and the easy-learning skill takes over.
+"turn this PDF into study notes" — and the easy-learning skill takes over. Ask for
+revision notes instead — "make revision notes from this deck, questions at the end" —
+and easy-review takes over. It installs both.
 `);
 }
 
