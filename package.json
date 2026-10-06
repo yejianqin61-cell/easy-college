@@ -12,6 +12,7 @@
     "scripts/",
     ".claude-plugin/",
     "docs/",
+    "!docs/CST204-*.md",
     "AGENTS.md",
     "README.md",
     "README.zh-CN.md",

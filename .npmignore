@@ -1,0 +1,21 @@
+# What must not reach npm.
+#
+# Note: `.npmignore` does NOT override a `files` allowlist. Measured: with `files` listing
+# docs/, this file was ignored and the scratch document still packed. The authoritative entry
+# is the negation in package.json:
+#
+#     "files": ["docs/", "!docs/CST204-*.md", ...]
+#
+# Everything below is a safety net for installs that read this file instead, such as a pack run
+# with the `files` field removed.
+
+docs/CST204-*.md
+*.scratch.md
+
+# Scratch and third-party courseware, for installs from a clone rather than the tarball.
+work/
+notes/
+example/
+node_modules/
+__pycache__/
+*.pyc
