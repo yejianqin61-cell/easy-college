@@ -3,17 +3,30 @@
 **Agent skills that turn a lecture into study notes you can actually trust.**
 
 Drop in a PDF, PPTX, DOCX or Markdown lecture. Get back study notes you can check: the knowledge
-points, a PDF, the lecture's own self-test questions, and an honest report of which pages the
-pipeline could not read and which pages it dropped.
+points, a PDF, the lecture's own questions, and an honest report of which pages the pipeline could
+not read and which pages it dropped.
+
+> **English** · [中文](README.zh-CN.md)
 
 Built for university courseware, where the slides are ugly, the formulas are images, and the text
 layer lies.
 
-```
-npx github:yejianqin61-cell/easy-college
-```
-
 ---
+
+## Skills in this repo
+
+A skill is a folder. Copy the folder and you have the skill. Both read the same courseware and
+share the same page ledger; they differ in the document they produce.
+
+| Skill | What it does |
+|---|---|
+| [`easy-learning`](skills/easy-learning/) | **Study notes for a first pass.** The lecture's prose carried over whole, with its own questions sitting next to the point they test. |
+| [`easy-review`](skills/easy-review/) | **Revision notes.** A knowledge map on top, knowledge extracted completely as numbered items under modules, and every question pulled out into one self-test column at the end. |
+
+Reach for `easy-learning` when the material is new. Reach for `easy-review` when you are revising —
+or the moment you say *"put all the questions at the end"*. Three cases where it is worth saying
+out loud: *"I already studied this"* → `easy-review`; *"put all the questions at the end"* →
+`easy-review`; *"this is my first time with this material"* → `easy-learning`.
 
 ## Install
 
@@ -49,8 +62,8 @@ git clone https://github.com/yejianqin61-cell/easy-college
 cp -r easy-college/skills/* ~/.agents/skills/     # or symlink them, and edit in place
 ```
 
-A skill is a folder. Copy the folder and you have the skill; edit the folder and you have your
-own version. Nothing here updates behind your back.
+A skill is a folder. Copy the folder and you have the skill; edit the folder and you have your own
+version. Nothing here updates behind your back.
 
 </details>
 
@@ -89,7 +102,7 @@ file rather than by a successful import.
 
 ---
 
-## Two skills, two shapes of the same lecture
+## The difference, in detail
 
 The distinction is the point of this repo. Handing a student who already knows the material a note
 built for someone meeting it for the first time is the failure both skills exist to prevent.
@@ -106,17 +119,40 @@ built for someone meeting it for the first time is the failure both skills exist
 Both read the same courseware, share the same page ledger, and obey the same rule: **every item
 gets a page number**, so any line can be checked against the original.
 
-### Which one runs?
+### Documentation
 
-You do not have to decide up front — each skill's description states when it applies, so the
-agent picks. Three cases where you should say it out loud:
+One page of prose per skill, in English and in Chinese:
 
-- **"I already studied this"** → `easy-review`. Without that signal a request for "notes" reads as
-  a first pass.
-- **"Put all the questions at the end"** → `easy-review`, and your instruction overrides the
-  first-pass default even if you asked for "notes".
-- **"This is my first time with this material"** → `easy-learning`. Questions next to the material
-  they test is a *learning* feature, not a defect.
+| Skill | English | 中文 |
+|---|---|---|
+| `easy-learning` | [docs/easy-learning.md](docs/easy-learning.md) | [docs/zh-CN/easy-learning.md](docs/zh-CN/easy-learning.md) |
+| `easy-review` | [docs/easy-review.md](docs/easy-review.md) | [docs/zh-CN/easy-review.md](docs/zh-CN/easy-review.md) |
+
+### Two invariants
+
+Everything both skills do serves these two rules.
+
+**Every page gets a verdict.** Each page of each input lands in a **ledger** with its verdict
+(`readable` / `needs-vision` / `needs-human`), the trap that fired, whether it was kept or dropped, and
+the reason code for the drop. The ledger reconciles at every step: *rows = the sum of all input page
+counts*. An un-judged page is the failure these skills exist to prevent.
+
+**Every item gets a page number.** No knowledge point, formula, table, question or correction enters
+the notes without the source page it came from. You can open the original lecture at the cited page and
+find the same content there. Notes you can check, rather than notes that sound right.
+
+And one rule about not overstepping: **fidelity is the default.** A kept page is carried into the notes
+in full — every sentence, every formula, every table, every question. The skills reorganise; they do not
+decide what you do not need. Only background material (motivation, analogy, covers, dividers, breaks)
+may be dropped, and every dropped page is listed for your veto.
+
+### Language
+
+The notes follow the language you asked in.
+
+- **Asked in Chinese** → Chinese body, every technical term given in both languages on first use,
+  and the lecture's own wording, definitions and question stems kept verbatim in English.
+- **Asked in English** → English throughout.
 
 ---
 
@@ -148,34 +184,6 @@ The failure modes both skills are built around:
 Each trap has a detection signature and a recovery. The catalogue is shipped inside both skills —
 [`easy-learning/references/traps.md`](skills/easy-learning/references/traps.md) — and the two copies
 are kept byte-identical by a test, so neither skill can drift.
-
----
-
-## Two invariants
-
-Everything both skills do serves these two rules.
-
-**Every page gets a verdict.** Each page of each input lands in a **ledger** with its verdict
-(`readable` / `needs-vision` / `needs-human`), the trap that fired, whether it was kept or dropped, and
-the reason code for the drop. The ledger reconciles at every step: *rows = the sum of all input page
-counts*. An un-judged page is the failure these skills exist to prevent.
-
-**Every item gets a page number.** No knowledge point, formula, table, question or correction enters
-the notes without the source page it came from. You can open the original lecture at the cited page and
-find the same content there. Notes you can check, rather than notes that sound right.
-
-And one rule about not overstepping: **fidelity is the default.** A kept page is carried into the notes
-in full — every sentence, every formula, every table, every question. The skills reorganise; they do not
-decide what you do not need. Only background material (motivation, analogy, covers, dividers, breaks)
-may be dropped, and every dropped page is listed for your veto.
-
-## Language
-
-The notes follow the language you asked in.
-
-- **Asked in Chinese** → Chinese body, every technical term given in both languages on first use,
-  and the lecture's own wording, definitions and question stems kept verbatim in English.
-- **Asked in English** → English throughout.
 
 ---
 
@@ -247,25 +255,6 @@ the lecture; that stays the extracting agent's job, reconciled out loud at the e
 
 ---
 
-## Reference
-
-A skill is model-invoked unless it says otherwise, so you reach both of these by describing your
-task, not by remembering a command.
-
-### Learning
-
-- **[easy-learning](./skills/easy-learning/SKILL.md)**: courseware → study notes. A per-page triage
-  ledger, knowledge points with the lecture's own questions in place, a mind map, a PDF, and the
-  honest report of what could not be read. [Full documentation →](docs/easy-learning.md)
-- **[easy-review](./skills/easy-review/SKILL.md)**: courseware → revision notes. A knowledge map on
-  top, every knowledge point as a numbered item under its module, no question in the body, and one
-  self-test column at the end. [Full documentation →](docs/easy-review.md)
-
-Both are model-invoked. Either can run alone; `easy-review` ships its own copy of the triage script
-and the trap catalogue, so installing one skill never leaves a hole in it.
-
----
-
 ## Layout
 
 ```
@@ -283,7 +272,7 @@ skills/
     ├── scripts/knowledge-map.py   note headings → SVG, sub-points included
     ├── scripts/check-review.py    proves the revision contract holds
     └── assets/review.css      the above, plus a page break before the self-test column
-docs/                          one page of prose per skill
+docs/                          one page of prose per skill, in English and zh-CN/
 bin/cli.js                     the npx installer
 ```
 
@@ -307,16 +296,16 @@ column — and must fail every one of them. A checker that only passes good inpu
 A third test asserts that the two copies of `references/traps.md` are byte-identical, so the skills
 cannot silently disagree about what a trap looks like.
 
+```bash
+npm test        # repo-level checks: frontmatter, self-containment, shared-file parity
+```
+
 ## Contributing
 
 One folder per skill under `skills/`, with `SKILL.md` at its root. Keep a skill self-contained: if
 two skills need the same file, copy it and add it to the byte-identity check in
 [`scripts/test-repo.mjs`](scripts/test-repo.mjs), the way the trap catalogue is. The conventions for
 working in this repo are in [`AGENTS.md`](AGENTS.md).
-
-```bash
-npm test        # repo-level checks: frontmatter, self-containment, shared-file parity
-```
 
 ## License
 

@@ -165,12 +165,76 @@ section('documentation exists for every skill');
 for (const name of skillNames) {
   if (fs.existsSync(path.join(REPO, 'docs', `${name}.md`))) pass(`docs/${name}.md`);
   else fail(`docs/${name}.md is missing`);
+  if (fs.existsSync(path.join(REPO, 'docs', 'zh-CN', `${name}.md`))) {
+    pass(`docs/zh-CN/${name}.md`);
+  } else {
+    fail(`docs/zh-CN/${name}.md is missing (both READMEs link it)`);
+  }
 }
 for (const readme of ['README.md', 'README.zh-CN.md']) {
   const text = fs.readFileSync(path.join(REPO, readme), 'utf8');
   const missing = skillNames.filter((n) => !text.includes(n));
   if (missing.length) fail(`${readme} does not mention: ${missing.join(', ')}`);
   else pass(`${readme} mentions every skill`);
+}
+
+section('the two READMEs link to each other and lead with the skills');
+for (const [readme, other] of [['README.md', 'README.zh-CN.md'], ['README.zh-CN.md', 'README.md']]) {
+  const text = fs.readFileSync(path.join(REPO, readme), 'utf8');
+  const lines = text.split('\n');
+  const linkAt = lines.findIndex((l) => l.includes(`](${other})`));
+  if (linkAt === -1) {
+    fail(`${readme} does not link to ${other}`);
+    continue;
+  }
+  // "Up front" is a measurable claim: the switch sits in the header block, and the skills table
+  // arrives before the install steps.
+  const skillsAt = lines.findIndex((l) => /^##\s+(Skills in this repo|本仓库的技能)/.test(l));
+  const installAt = lines.findIndex((l) => /^##\s+(Install|安装)/.test(l));
+  if (linkAt > 12) fail(`${readme}: the ${other} link is at line ${linkAt + 1}, not in the header`);
+  if (skillsAt === -1) fail(`${readme}: no skills section`);
+  else if (installAt === -1) fail(`${readme}: no install section`);
+  else if (skillsAt > installAt) fail(`${readme}: install comes before the skills list`);
+  else pass(`${readme}: language link at line ${linkAt + 1}, skills at ${skillsAt + 1}, install at ${installAt + 1}`);
+}
+
+section('every relative link resolves');
+// A README that links a file that does not exist is worse than one that links nothing, and the
+// docs table makes that easy to get wrong in one language only. Only git-tracked .md files are
+// checked: scratch under work/ is generated, and a test fixture's placeholder links are its point.
+const LINK = /\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'work', 'notes', 'example']);
+let links = 0;
+const broken = [];
+const walkAll = (dir) => {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (SKIP_DIRS.has(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      walkAll(full);
+    } else if (entry.name.endsWith('.md')) {
+      const text = fs.readFileSync(full, 'utf8');
+      for (const match of text.matchAll(LINK)) {
+        const target = match[1];
+        if (/^(https?:|mailto:|#)/.test(target)) continue;
+        // `<name>.review.pdf` and friends are path *patterns* in documentation, not links.
+        if (/[<>{}]/.test(target)) continue;
+        links += 1;
+        const clean = target.split('#')[0];
+        if (!clean) continue;
+        if (!fs.existsSync(path.resolve(path.dirname(full), decodeURIComponent(clean)))) {
+          broken.push(`${path.relative(REPO, full)} -> ${target}`);
+        }
+      }
+    }
+  }
+};
+walkAll(REPO);
+if (broken.length) {
+  fail(`${broken.length} broken relative link(s):`);
+  broken.forEach((b) => console.log(`          ${b}`));
+} else {
+  pass(`all ${links} relative link(s) resolve`);
 }
 
 console.log('');

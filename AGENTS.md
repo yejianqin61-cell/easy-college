@@ -16,6 +16,7 @@ skills/<skill-name>/references/   catalogues and reference material the skill re
 skills/<skill-name>/scripts/      runnable steps
 skills/<skill-name>/assets/       stylesheets and other build inputs
 docs/<skill-name>.md              prose documentation, one page per skill
+docs/zh-CN/<skill-name>.md        the same page in Chinese — both READMEs link both
 bin/cli.js                        the installer
 scripts/test-repo.mjs             repo-level tests (`npm test`)
 ```
@@ -53,6 +54,15 @@ actually type — including the Chinese phrasings — and ends with what it does
 sibling to use instead. Two skills that read the same input must be separable from their
 descriptions alone.
 
+**Both READMEs are first-class.** `README.md` and `README.zh-CN.md` mirror each other section for
+section, and each links the other in its header block. Both lead with the skills table, then install,
+then the detail — a reader should learn what the repo contains and how to get it before any
+explanation of why. `npm test` asserts the ordering and the mutual link, so it cannot rot silently.
+
+**Documentation is bilingual.** Every `docs/<skill>.md` has a `docs/zh-CN/<skill>.md`. Keep the two in
+step section for section; a translation that lags is worse than none, because it is trusted. Relative
+links from `docs/zh-CN/` need one more `../` than from `docs/`, which `npm test` also checks.
+
 **Every skill flow states a "Done when" per step.** A step without an observable completion
 condition is a step an agent will skip.
 
@@ -75,6 +85,6 @@ fixtures from a deck at run time rather than committing them.
 1. Create `skills/<name>/SKILL.md` with the frontmatter above.
 2. Write it as a pipeline with numbered steps and a "Done when" per step.
 3. Add the skill path to `["skills"]` in `.claude-plugin/plugin.json`.
-4. Add a row to the install list and the Reference section of both READMEs.
-5. Add `docs/<name>.md`, following the shape of the existing pages.
+4. Add it to the skills table near the top of both READMEs, and to their docs tables.
+5. Add `docs/<name>.md` and `docs/zh-CN/<name>.md`, following the shape of the existing pages.
 6. Run `npm test`.
